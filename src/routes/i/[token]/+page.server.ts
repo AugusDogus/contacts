@@ -9,5 +9,6 @@ export const load = async ({ params, url }) => {
     error(404, 'This invitation could not be found. Ask your friend for a new link.');
   const slug = await addressBook(db).invitationPage(params.token);
   if (!slug) error(404, 'This invitation could not be found. Ask your friend for a new link.');
-  redirect(307, `${contactPageUrl(slug, url.origin)}/i/${params.token}`);
+  const pageUrl = contactPageUrl(slug, url.origin);
+  redirect(307, `${pageUrl}/i/${params.token}`, { external: [new URL(pageUrl).origin] });
 };

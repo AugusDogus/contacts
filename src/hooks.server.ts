@@ -17,7 +17,9 @@ export const handle: Handle = async ({ event, resolve }) => {
       (path) => event.url.pathname === path || event.url.pathname.startsWith(`${path}/`)
     )
   ) {
-    redirect(303, `${BETTER_AUTH_URL}${event.url.pathname}${event.url.search}`);
+    redirect(303, `${BETTER_AUTH_URL}${event.url.pathname}${event.url.search}`, {
+      external: [new URL(BETTER_AUTH_URL).origin]
+    });
   }
   const session = await auth.api.getSession({ headers: event.request.headers });
   event.locals.viewer = session
