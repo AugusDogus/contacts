@@ -6,7 +6,7 @@
   import { page } from '$app/state';
   import { Copy, Check, Download, Plus, Minus } from '@lucide/svelte';
   import Modal from './Modal.svelte';
-  import { createInvitations } from '#lib/contacts.remote.ts';
+  import { createInvitations, getAddressBook } from '#lib/contacts.remote.ts';
   import { invitationUrl } from '#lib/links.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
   let { onclose }: { onclose: () => void } = $props();
@@ -27,10 +27,11 @@
         error = result.message;
         return;
       }
+      const { profile } = await getAddressBook();
       links = result.invitations.map((i) => ({
         id: i.id,
         name: i.label ? `${i.label} #${invitationReference(i)}` : `#${invitationReference(i)}`,
-        url: invitationUrl(i.token, page.url.origin)
+        url: invitationUrl(i.token, page.url.origin, profile.slug)
       }));
     } catch (cause) {
       error =
