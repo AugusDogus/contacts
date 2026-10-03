@@ -80,6 +80,10 @@ Imports run sequentially in small batches. Contacts Exchange creates new Google 
 
 Google sign-in and the separate Google Contacts permission flow have both completed successfully against production. The app shows the account as connected. Google contact creation has not been live-tested because the account's address book is empty; no sample contacts were added to the user's Google account. Turso network access and wildcard DNS have been verified in production. Local tests use a libSQL database and mocked Google responses.
 
+The OAuth app is now **In production**, and `contacts.exchange` ownership is verified in Google Search Console. Public app information and privacy pages are at `/about` and `/privacy`. Google Contacts data-access verification has not been submitted: the console requires verified, published branding first. The requested support address is `augie@contacts.exchange`; Google requires it to be a Google account or managed Google Group before it can replace the current support-email selection.
+
+Vercel hosts authoritative DNS. Preserve the Google site-verification TXT record and Porkbun forwarding records: MX `fwd1.porkbun.com` (priority 10), MX `fwd2.porkbun.com` (priority 20), and TXT `v=spf1 include:_spf.porkbun.com ~all`. The forwarding destinations are managed in Porkbun, not Vercel.
+
 ## Styles and checks
 
 StyleX styles live in neighboring `*.stylex.ts` modules. Shared design tokens use `stylex.defineVars`; breakpoints use `stylex.defineConsts`; Svelte components compose variants with `stylex.attrs`. The only handwritten global CSS is a small reset. Fonts are self-hosted.
