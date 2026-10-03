@@ -4,6 +4,17 @@ A private, invitation-only address book for `contacts.exchange`.
 
 Built with Svelte 5.57, SvelteKit 3 remote functions, StyleX, Better Auth, Drizzle, and Turso. The Vercel adapter targets Node.js 24.
 
+## Hosted app
+
+- Production: [contacts.exchange](https://contacts.exchange)
+- Private repository: [AugusDogus/contacts](https://github.com/AugusDogus/contacts)
+- Vercel project: [augies-projects/contacts](https://vercel.com/augies-projects/contacts), connected to the repository's `main` branch.
+- Database: `contacts-production`, on Turso's free Starter plan through the Vercel Marketplace, in `iad1`. Connected only to the production environment.
+- Both `contacts.exchange` and `*.contacts.exchange` are verified. The registrar already uses `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
+- Google Cloud project: [Contacts Exchange](https://console.cloud.google.com/auth/overview?project=curious-scarab-510520-v4), project ID `curious-scarab-510520-v4`. OAuth configuration is pending.
+
+Production migrations have been applied. Account creation, guest submission on a wildcard subdomain, single-use replay rejection, and vCard export were verified against the deployed app. Temporary test records were removed.
+
 ## Local development
 
 ```sh
@@ -67,7 +78,7 @@ Basic Google login requests identity access. The Google Contacts screen separate
 
 Imports run sequentially in small batches. Gather creates new Google contacts, without reading or overwriting existing contacts. It skips its own completed imports. If a response is interrupted after Google may have accepted a write, that card is marked for manual checking rather than automatically retried. Photos that fail to transfer are reported. Existing contacts created outside Gather are not deduplicated; Google Contacts can merge those afterward.
 
-Live Google OAuth, Google API writes, Turso network access, and wildcard DNS require your external configuration. Local tests use a libSQL database and mocked Google responses.
+Live Google OAuth and Google API writes still require OAuth configuration. Turso network access and wildcard DNS have been verified in production. Local tests use a libSQL database and mocked Google responses.
 
 ## Styles and checks
 
