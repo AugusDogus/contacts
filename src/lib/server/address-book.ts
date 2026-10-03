@@ -1,0 +1,226 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { and, desc, eq, exists, gt, isNull, sql } from 'drizzle-orm';
+import { contactInput, type ContactInput } from '../contact';
+import type { AppDatabase } from './db';
+import { contacts, invitations, profiles, savedCards } from './schema';
+
+export type Profile = typeof profiles.$inferSelect;
+export type Invitation = Omit<typeof invitations.$inferSelect, 'tokenHash'>;
+const hash = (token: string) => createHash('sha256').update(token).digest('hex');
+const reservedSlugs = new Set([
+  'www',
+  'app',
+  'api',
+  'admin',
+  'mail',
+  'support',
+  'help',
+  'login',
+  'signup',
+  'static',
+  'assets',
+  'contacts'
+]);
+
+export function addressBook(db: AppDatabase) {
+  async function profile(ownerId: string) {
+    return (await db.query.profiles.findFirst({ where: eq(profiles.ownerId, ownerId) })) ?? null;
+  }
+  async function publicProfile(slug: string) {
+    return (await db.query.profiles.findFirst({ where: eq(profiles.slug, slug) })) ?? null;
+  }
+  async function ensureProfile(ownerId: string, name: string) {
+    const existing = await profile(ownerId);
+    if (existing) return existing;
+    const base =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 24) || 'friend';
+    await db
+      .insert(profiles)
+      .values({
+        ownerId,
+        slug: `${base}-${randomBytes(4).toString('hex')}`,
+        name,
+        createdAt: Date.now()
+      })
+      .onConflictDoNothing({ target: profiles.ownerId });
+    const created = await profile(ownerId);
+    if (!created)
+      throw new Error(
+        'Profile creation did not return a profile. Check the database connection and retry.'
+      );
+    return created;
+  }
+  async function listContacts(ownerId: string) {
+    const rows = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.ownerId, ownerId))
+      .orderBy(desc(contacts.createdAt));
+    return rows.map(({ claimHash: _claimHash, ...row }) => ({
+      ...row,
+      data: contactInput.parse(row.data)
+    }));
+  }
+  async function listInvitations(ownerId: string): Promise<Invitation[]> {
+    const rows = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.ownerId, ownerId))
+      .orderBy(desc(invitations.createdAt));
+    return rows.map(({ tokenHash: _hash, ...invitation }) => invitation);
+  }
+  async function createInvitations(ownerId: string, count: number, label: string) {
+    const generated = Array.from({ length: count }, (_, index) => ({
+      id: randomUUID(),
+      ownerId,
+      token: randomBytes(32).toString('base64url'),
+      label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
+      status: 'pending' as const,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 30 * 86_400_000
+    }));
+    await db
+      .insert(invitations)
+      .values(generated.map(({ token, ...invite }) => ({ ...invite, tokenHash: hash(token) })));
+    return generated;
+  }
+  async function invitation(token: string, slug: string) {
+    const result = await db
+      .select({ invitation: invitations })
+      .from(invitations)
+      .innerJoin(profiles, eq(profiles.ownerId, invitations.ownerId))
+      .where(
+        and(
+          eq(invitations.tokenHash, hash(token)),
+          eq(profiles.slug, slug),
+          eq(invitations.status, 'pending'),
+          gt(invitations.expiresAt, Date.now())
+        )
+      )
+      .get();
+    return result?.invitation ?? null;
+  }
+  async function submit(token: string, slug: string, input: ContactInput) {
+    const parsed = contactInput.safeParse(input);
+    if (!parsed.success)
+      return {
+        ok: false,
+        message: parsed.error.issues[0]?.message || 'Check your contact details.'
+      } as const;
+    const owner = await publicProfile(slug);
+    if (!owner) return { ok: false, message: 'This contact page is no longer available.' } as const;
+    const id = randomUUID();
+    const receipt = randomBytes(32).toString('base64url');
+    // Turso batches are atomic. INSERT ... SELECT checks validity inside the same
+    // write transaction that consumes the link, without interactive transaction locks.
+    const [inserted] = await db.batch([
+      db
+        .insert(contacts)
+        .select(
+          db
+            .select({
+              id: sql<string>`${id}`.as('id'),
+              ownerId: invitations.ownerId,
+              invitationId: invitations.id,
+              linkedUserId: sql<string | null>`NULL`.as('linkedUserId'),
+              claimHash: sql<string>`${hash(receipt)}`.as('claimHash'),
+              createdAt: sql<number>`${Date.now()}`.as('createdAt'),
+              data: sql<ContactInput>`${JSON.stringify(parsed.data)}`.as('data'),
+              favorite: sql<boolean>`0`.as('favorite')
+            })
+            .from(invitations)
+            .where(
+              and(
+                eq(invitations.tokenHash, hash(token)),
+                eq(invitations.ownerId, owner.ownerId),
+                eq(invitations.status, 'pending'),
+                gt(invitations.expiresAt, Date.now())
+              )
+            )
+        )
+        .returning({ id: contacts.id }),
+      db
+        .update(invitations)
+        .set({ status: 'used' })
+        .where(
+          and(
+            eq(invitations.tokenHash, hash(token)),
+            exists(db.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, id)))
+          )
+        )
+    ]);
+    if (!inserted.length)
+      return {
+        ok: false,
+        message:
+          'This invitation has already been used, expired, or was revoked. Ask your friend for a new link.'
+      } as const;
+    return { ok: true, receipt } as const;
+  }
+  async function claim(receipt: string, userId: string) {
+    const eligible = and(
+      eq(contacts.claimHash, hash(receipt)),
+      isNull(contacts.linkedUserId),
+      gt(contacts.createdAt, Date.now() - 86_400_000)
+    );
+    const [, claimed] = await db.batch([
+      db
+        .insert(savedCards)
+        .select(
+          db
+            .select({ userId: sql<string>`${userId}`.as('userId'), data: contacts.data })
+            .from(contacts)
+            .where(eligible)
+        )
+        .onConflictDoUpdate({ target: savedCards.userId, set: { data: sql`excluded.data` } }),
+      db
+        .update(contacts)
+        .set({ linkedUserId: userId, claimHash: null })
+        .where(eligible)
+        .returning({ id: contacts.id })
+    ]);
+    return claimed.length > 0;
+  }
+  async function saveProfile(
+    ownerId: string,
+    input: { name: string; slug: string; message: string }
+  ) {
+    if (reservedSlugs.has(input.slug))
+      return { ok: false, message: 'That address is reserved. Choose a different name.' } as const;
+    // A single UNIQUE-guarded update prevents simultaneous claims from stealing a name.
+    const current = await profile(ownerId);
+    if (!current)
+      return {
+        ok: false,
+        message: 'Your address book could not be found. Sign in again.'
+      } as const;
+    try {
+      await db.update(profiles).set(input).where(eq(profiles.ownerId, ownerId));
+      return { ok: true } as const;
+    } catch (cause) {
+      const collision = await publicProfile(input.slug);
+      if (collision && collision.ownerId !== ownerId)
+        return {
+          ok: false,
+          message: 'That page address is already taken. Try another one.'
+        } as const;
+      throw cause;
+    }
+  }
+  return {
+    profile,
+    publicProfile,
+    ensureProfile,
+    contacts: listContacts,
+    invitations: listInvitations,
+    createInvitations,
+    invitation,
+    submit,
+    claim,
+    saveProfile
+  };
+}
