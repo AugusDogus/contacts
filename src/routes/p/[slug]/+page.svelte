@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head
-  ><title>{data.profile.name}'s contact page | Gather</title><meta
+  ><title>{data.profile.name}'s contact page | Contacts Exchange</title><meta
     name="robots"
     content="noindex, nofollow"
   /></svelte:head

@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head
-  ><title>A contact card for {data.profile.name} | Gather</title><meta
+  ><title>A contact card for {data.profile.name} | Contacts Exchange</title><meta
     name="robots"
     content="noindex, nofollow"
   /></svelte:head

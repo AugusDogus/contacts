@@ -1,4 +1,4 @@
-# Gather
+# Contacts Exchange
 
 A private, invitation-only address book for `contacts.exchange`.
 
@@ -11,7 +11,7 @@ Built with Svelte 5.57, SvelteKit 3 remote functions, StyleX, Better Auth, Drizz
 - Vercel project: [augies-projects/contacts](https://vercel.com/augies-projects/contacts), connected to the repository's `main` branch.
 - Database: `contacts-production`, on Turso's free Starter plan through the Vercel Marketplace, in `iad1`. Connected only to the production environment.
 - Both `contacts.exchange` and `*.contacts.exchange` are verified. The registrar already uses `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
-- Google Cloud project: [Contacts Exchange](https://console.cloud.google.com/auth/overview?project=curious-scarab-510520-v4), project ID `curious-scarab-510520-v4`. The external OAuth app is named `Gather Contacts`, and its web client is `Contacts Exchange Web`. Its credentials are stored as sensitive production variables in Vercel. Adding test users and enabling the People API are pending.
+- Google Cloud project: [Contacts Exchange](https://console.cloud.google.com/auth/overview?project=curious-scarab-510520-v4), project ID `curious-scarab-510520-v4`. The external OAuth app is named `Contacts Exchange`, and its web client is `Contacts Exchange Web`. Its credentials are stored as sensitive production variables in Vercel. The People API is enabled and `augie@contacts.exchange` is an authorized test user. The app remains in Google's Testing publishing status, so additional Google users must be added as test users until public rollout.
 
 Production migrations have been applied. Account creation, guest submission on a wildcard subdomain, single-use replay rejection, and vCard export were verified against the deployed app. Temporary test records were removed.
 
@@ -76,9 +76,9 @@ https://contacts.exchange/api/auth/callback/google
 
 Basic Google login requests identity access. The Google Contacts screen separately requests `https://www.googleapis.com/auth/contacts` and offline access. Configure allowed test users while the OAuth app is in testing, and complete Google's publishing requirements before public use. Google may limit refresh-token lifetime while the OAuth app is in testing.
 
-Imports run sequentially in small batches. Gather creates new Google contacts, without reading or overwriting existing contacts. It skips its own completed imports. If a response is interrupted after Google may have accepted a write, that card is marked for manual checking rather than automatically retried. Photos that fail to transfer are reported. Existing contacts created outside Gather are not deduplicated; Google Contacts can merge those afterward.
+Imports run sequentially in small batches. Contacts Exchange creates new Google contacts, without reading or overwriting existing contacts. It skips its own completed imports. If a response is interrupted after Google may have accepted a write, that card is marked for manual checking rather than automatically retried. Photos that fail to transfer are reported. Existing contacts created outside Contacts Exchange are not deduplicated; Google Contacts can merge those afterward.
 
-Google OAuth initiation has been verified against production, including its callback URL and identity-only login scopes. Completing a Google sign-in and testing Google API writes still require test-user access and People API activation. Turso network access and wildcard DNS have been verified in production. Local tests use a libSQL database and mocked Google responses.
+Google sign-in and the separate Google Contacts permission flow have both completed successfully against production. The app shows the account as connected. Google contact creation has not been live-tested because the account's address book is empty; no sample contacts were added to the user's Google account. Turso network access and wildcard DNS have been verified in production. Local tests use a libSQL database and mocked Google responses.
 
 ## Styles and checks
 

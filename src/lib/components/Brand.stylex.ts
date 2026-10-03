@@ -6,11 +6,11 @@ export const styles = stylex.create({
     alignItems: 'center',
     gap: 10,
     fontFamily: tokens.heading,
-    fontSize: 29,
+    fontSize: 21,
+    lineHeight: 1.05,
     fontWeight: 700,
-    letterSpacing: -1.1,
+    letterSpacing: -0.6,
     color: tokens.ink,
     textDecoration: 'none'
-  },
-  brandDot: { color: tokens.blue }
+  }
 });

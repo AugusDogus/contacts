@@ -64,7 +64,7 @@
   }
 </script>
 
-<svelte:head><title>Google Contacts | Gather</title></svelte:head>
+<svelte:head><title>Google Contacts | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
   <div>
     <h1>Your people. Wherever you need them.</h1>
@@ -130,8 +130,8 @@
       </div>{/if}
     <p {...stylex.attrs(styles.note)}>
       <ShieldCheck size={17} />You choose when to import. We don’t read or overwrite your existing
-      Google contacts. Cards already imported by Gather are skipped; existing contacts you added
-      outside Gather may still need merging in Google.
+      Google contacts. Cards already imported by Contacts Exchange are skipped; existing contacts
+      you added outside Contacts Exchange may still need merging in Google.
     </p>
   </section>
   <section {...stylex.attrs(ui.panel, styles.exportPanel)}>

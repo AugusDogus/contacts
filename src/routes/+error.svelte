@@ -13,6 +13,6 @@
     <p {...stylex.attrs(styles.closedText)}>
       {page.error?.message || 'Check the link and try again. Your saved contacts are unchanged.'}
     </p>
-    <a {...stylex.attrs(ui.button, ui.primary)} href="/">Back to Gather</a>
+    <a {...stylex.attrs(ui.button, ui.primary)} href="/">Back to Contacts Exchange</a>
   </main>
 </div>

@@ -9,7 +9,7 @@ import * as schema from './schema';
 
 if (!dev && !building && (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL)) {
   throw new Error(
-    'Set BETTER_AUTH_SECRET and BETTER_AUTH_URL before starting Gather in production.'
+    'Set BETTER_AUTH_SECRET and BETTER_AUTH_URL before starting Contacts Exchange in production.'
   );
 }
 export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);

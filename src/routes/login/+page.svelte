@@ -38,7 +38,8 @@
 </script>
 
 <svelte:head
-  ><title>{mode === 'signup' ? 'Start your address book' : 'Welcome back'} | Gather</title
+  ><title
+    >{mode === 'signup' ? 'Start your address book' : 'Welcome back'} | Contacts Exchange</title
   ></svelte:head
 >
 <div {...stylex.attrs(styles.shell)}>

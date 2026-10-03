@@ -44,7 +44,7 @@
   }
 </script>
 
-<svelte:head><title>My contact page | Gather</title></svelte:head>
+<svelte:head><title>My contact page | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
   <div>
     <h1>A small space with your name on it.</h1>

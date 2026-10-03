@@ -32,7 +32,7 @@
   }
 </script>
 
-<svelte:head><title>Settings | Gather</title></svelte:head>
+<svelte:head><title>Settings | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
   <div>
     <h1>Make yourself at home.</h1>

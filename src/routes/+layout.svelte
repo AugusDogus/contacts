@@ -23,7 +23,7 @@
 
 <svelte:head
   >{#if import.meta.env.DEV}<link rel="stylesheet" href="/virtual:stylex.css" />{/if}<title
-    >Gather | Your people, in one place</title
+    >Contacts Exchange | Your people, in one place</title
   ><meta
     name="description"
     content="A private address book, filled in by the people you know. Share an invitation, collect the details, and keep in touch."

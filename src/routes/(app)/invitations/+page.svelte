@@ -33,7 +33,7 @@
   }
 </script>
 
-<svelte:head><title>Invitations | Gather</title></svelte:head>
+<svelte:head><title>Invitations | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
   <div>
     <h1>Bring your people along.</h1>
