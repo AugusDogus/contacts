@@ -5,6 +5,7 @@ import { addressBook } from './server/address-book';
 import { db } from './server/db';
 import { normalizePhoto } from './server/photo';
 import { claimCookieDomain } from './server/claim-cookie';
+import { checkInvitationAccess } from './server/invitation-access';
 import { invitationTokenPattern } from './invitation-token';
 
 export const submitContact = command(
@@ -15,6 +16,7 @@ export const submitContact = command(
     consent: z.literal(true)
   }),
   async ({ slug, token, contact }) => {
+    await checkInvitationAccess(db, getRequestEvent().getClientAddress());
     const book = addressBook(db);
     if (!(await book.invitation(token, slug)))
       return {

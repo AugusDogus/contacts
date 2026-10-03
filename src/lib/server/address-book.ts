@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { and, desc, eq, exists, gt, isNull, sql } from 'drizzle-orm';
 import { contactInput, type ContactInput } from '../contact';
+import { InvitationToken } from './invitation-token';
 import type { AppDatabase } from './db';
 import { contacts, invitations, profiles, savedCards } from './schema';
 
@@ -74,22 +75,40 @@ export function addressBook(db: AppDatabase) {
     return rows.map(({ tokenHash: _hash, ...invitation }) => invitation);
   }
   async function createInvitations(ownerId: string, count: number, label: string) {
-    const generated = Array.from({ length: count }, (_, index) => {
-      const id = randomUUID();
-      return {
-        id,
-        ownerId,
-        // Searchable reference plus a 96-bit secret. Only the full token hash is stored.
-        token: id.slice(0, 8) + randomBytes(12).toString('base64url'),
-        label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
-        status: 'pending' as const,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + 30 * 86_400_000
-      };
-    });
-    await db
-      .insert(invitations)
-      .values(generated.map(({ token, ...invite }) => ({ ...invite, tokenHash: hash(token) })));
+    const generated: (Invitation & { token: string })[] = [];
+    let pending = Array.from({ length: count }, (_, index) => index);
+    // A UNIQUE constraint arbitrates collisions, including simultaneous batches.
+    for (let attempt = 0; generated.length < count && attempt < 5; attempt++) {
+      const candidates = pending.map((index) => {
+        const token = InvitationToken.generate();
+        return {
+          id: randomUUID(),
+          ownerId,
+          token,
+          // An owner-only fragment lets people search their messages without storing the token.
+          reference: token.slice(0, 3),
+          label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
+          status: 'pending' as const,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 30 * 86_400_000
+        };
+      });
+      const inserted = await db
+        .insert(invitations)
+        .values(candidates.map(({ token, ...invite }) => ({ ...invite, tokenHash: hash(token) })))
+        .onConflictDoNothing({ target: invitations.tokenHash })
+        .returning({ id: invitations.id });
+      const ids = new Set(inserted.map(({ id }) => id));
+      generated.push(...candidates.filter(({ id }) => ids.has(id)));
+      pending = pending.filter((_, index) => {
+        const candidate = candidates[index];
+        return candidate === undefined || !ids.has(candidate.id);
+      });
+    }
+    if (generated.length !== count)
+      throw new Error(
+        'Could not allocate unique invitation codes after five attempts. Retry creating links.'
+      );
     return generated;
   }
   async function invitationPage(token: string) {

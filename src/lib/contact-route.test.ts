@@ -5,7 +5,7 @@ test('routes only a single claimed subdomain on the configured domain', () => {
   expect(contactRoute(new URL('https://augie.contacts.exchange/'), 'contacts.exchange')).toBe(
     '/p/augie'
   );
-  for (const length of [24, 43]) {
+  for (const length of [7, 24, 43]) {
     const token = 'a'.repeat(length);
     expect(
       contactRoute(new URL(`https://augie.contacts.exchange/i/${token}`), 'contacts.exchange')

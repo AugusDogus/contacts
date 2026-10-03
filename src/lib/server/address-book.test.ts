@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
+import { InvitationToken } from './invitation-token';
 import { and, eq } from 'drizzle-orm';
 import { testDatabase } from '../../../test/database';
 import { addressBook } from './address-book';
 import { contacts, invitations } from './schema';
+import { invitationReference } from '../invitation-token';
 import { Contact } from '../contact';
 import { createHash, randomBytes } from 'node:crypto';
 
@@ -29,8 +31,27 @@ async function setup() {
 describe('private invitations', () => {
   test('creates short tokens containing the searchable invitation reference', async () => {
     const { invite } = await setup();
-    expect(invite.token).toMatch(/^[A-Za-z0-9_-]{24}$/);
-    expect(invite.token.startsWith(invite.id.slice(0, 8))).toBe(true);
+    expect(invite.token).toMatch(/^[A-Za-z0-9_-]{7}$/);
+    expect(invite.token.startsWith(invitationReference(invite))).toBe(true);
+  });
+  test('retries collisions without reassigning existing invitations or duplicating batch labels', async () => {
+    const { book, owner, other, invite } = await setup();
+    const generator = spyOn(InvitationToken, 'generate')
+      .mockReturnValueOnce(invite.token)
+      .mockReturnValueOnce('Batch_2')
+      .mockReturnValueOnce('Batch_1');
+    try {
+      const batch = await book.createInvitations(other.ownerId, 2, 'Friend');
+      expect(batch.map(({ label }) => label).sort()).toEqual(['Friend 1', 'Friend 2']);
+      expect(new Set(batch.map(({ token }) => token)).size).toBe(2);
+      expect(await book.invitationPage(invite.token)).toBe(owner.slug);
+      for (const item of batch) expect(await book.invitationPage(item.token)).toBe(other.slug);
+    } finally {
+      generator.mockRestore();
+    }
+  });
+  test('legacy references remain searchable without a stored fragment', () => {
+    expect(invitationReference({ id: '01234567-example', reference: null })).toBe('01234567');
   });
   test('resolves the current page after a rename and preserves closed invitation states', async () => {
     const { book, owner, invite, contact } = await setup();
@@ -42,18 +63,21 @@ describe('private invitations', () => {
     expect(await book.invitationPage(invite.token)).toBe('new-address');
     expect(await book.invitation(invite.token, 'new-address')).toBeNull();
   });
-  test('existing long tokens still resolve and accept one submission', async () => {
-    const { db, book, owner, invite, contact } = await setup();
-    const token = randomBytes(32).toString('base64url');
-    await db
-      .update(invitations)
-      .set({ tokenHash: createHash('sha256').update(token).digest('hex') })
-      .where(eq(invitations.id, invite.id));
-    expect(await book.invitationPage(token)).toBe(owner.slug);
-    expect(await book.invitation(token, owner.slug)).not.toBeNull();
-    expect((await book.submit(token, owner.slug, contact)).ok).toBe(true);
-    expect((await book.submit(token, owner.slug, contact)).ok).toBe(false);
-  });
+  test.each([18, 32])(
+    'existing tokens from %i random bytes still accept one submission',
+    async (bytes) => {
+      const { db, book, owner, invite, contact } = await setup();
+      const token = randomBytes(bytes).toString('base64url');
+      await db
+        .update(invitations)
+        .set({ tokenHash: createHash('sha256').update(token).digest('hex') })
+        .where(eq(invitations.id, invite.id));
+      expect(await book.invitationPage(token)).toBe(owner.slug);
+      expect(await book.invitation(token, owner.slug)).not.toBeNull();
+      expect((await book.submit(token, owner.slug, contact)).ok).toBe(true);
+      expect((await book.submit(token, owner.slug, contact)).ok).toBe(false);
+    }
+  );
   test('accepts exactly one concurrent submission and scopes contacts to the owner', async () => {
     const { book, owner, other, invite, contact } = await setup();
     const results = await Promise.all([

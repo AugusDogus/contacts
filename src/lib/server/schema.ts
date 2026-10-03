@@ -82,6 +82,7 @@ export const invitations = sqliteTable(
       .notNull()
       .references(() => profiles.ownerId, { onDelete: 'cascade' }),
     tokenHash: text().notNull().unique(),
+    reference: text(),
     label: text().notNull(),
     status: text({ enum: ['pending', 'used', 'revoked'] }).notNull(),
     createdAt: integer().notNull(),

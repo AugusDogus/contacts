@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { invitationReference } from '#lib/invitation-token.ts';
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './InviteDialog.stylex.ts';
@@ -28,7 +29,7 @@
       }
       links = result.invitations.map((i) => ({
         id: i.id,
-        name: i.label ? `${i.label} #${i.id.slice(0, 8)}` : `#${i.id.slice(0, 8)}`,
+        name: i.label ? `${i.label} #${invitationReference(i)}` : `#${invitationReference(i)}`,
         url: invitationUrl(i.token, page.url.origin)
       }));
     } catch (cause) {

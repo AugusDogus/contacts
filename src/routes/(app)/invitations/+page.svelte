@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { invitationReference } from '#lib/invitation-token.ts';
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './invitations.stylex.ts';
@@ -84,7 +85,7 @@
           <div {...stylex.attrs(styles.details)}>
             <p {...stylex.attrs(styles.label)}>
               {invitation.label || 'Untitled'}
-              <span {...stylex.attrs(styles.reference)}>#{invitation.id.slice(0, 8)}</span>
+              <span {...stylex.attrs(styles.reference)}>#{invitationReference(invitation)}</span>
             </p>
             <p {...stylex.attrs(styles.meta)}>
               {#if contact}Added {Contact.name(contact.data)}{:else if state === 'pending'}Expires {date(
@@ -103,7 +104,8 @@
               {...stylex.attrs(ui.button, ui.small)}
               onclick={() => revoke(invitation.id)}
               disabled={busyId === invitation.id}
-              aria-label="Revoke {invitation.label || `invitation #${invitation.id.slice(0, 8)}`}"
+              aria-label="Revoke {invitation.label ||
+                `invitation #${invitationReference(invitation)}`}"
               >{busyId === invitation.id ? 'Revoking…' : 'Revoke'}</button
             >{:else if contact}<button
               {...stylex.attrs(ui.button, ui.small)}
@@ -114,8 +116,8 @@
     </ul>
   </section>
   <p {...stylex.attrs(styles.footnote)}>
-    Lost a link? Revoke it and create a new one. Each link contains its #reference, so you can
-    search your messages for it.
+    Lost a link? Revoke it and create a new one. Search your messages for a link’s reference to find
+    who you sent it to.
   </p>
 {:else}
   <section {...stylex.attrs(ui.panel, ui.emptyState)} aria-labelledby="no-invitations">

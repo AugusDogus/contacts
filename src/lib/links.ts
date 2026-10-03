@@ -5,7 +5,7 @@ export function invitationUrl(token: string, origin: string) {
   if (url.hostname.endsWith(`.${PUBLIC_CONTACTS_DOMAIN}`)) {
     url.hostname = PUBLIC_CONTACTS_DOMAIN;
   }
-  return `${url.origin}/i/${token}`;
+  return `${url.origin}/${token}`;
 }
 
 export function contactPageUrl(slug: string, origin: string) {
