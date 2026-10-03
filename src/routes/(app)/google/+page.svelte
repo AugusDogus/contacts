@@ -2,7 +2,7 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './google.stylex.ts';
-  import { Download, ArrowUpRight, ShieldCheck, RefreshCw, ContactRound } from '@lucide/svelte';
+  import { Download } from '@lucide/svelte';
   import { getGoogleConnection, importToGoogle } from '#lib/google.remote.ts';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { authClient } from '#lib/auth-client.ts';
@@ -18,6 +18,21 @@
   let uncertain = $derived(
     book.contacts.filter((c) => imports.some((i) => i.contactId === c.id && i.status !== 'done'))
   );
+  let added = $derived(
+    book.contacts.filter((c) => imports.some((i) => i.contactId === c.id && i.status === 'done'))
+      .length
+  );
+  let summary = $derived(
+    !book.contacts.length
+      ? 'No contacts to add yet.'
+      : [
+          added && `${added} already added.`,
+          pending.length && `${pending.length} not added yet.`,
+          uncertain.length && `${uncertain.length} couldn’t be confirmed. See below.`
+        ]
+          .filter(Boolean)
+          .join(' ')
+  );
   async function connect() {
     busy = true;
     error = '';
@@ -28,9 +43,9 @@
         callbackURL: '/google',
         additionalParams: { access_type: 'offline', prompt: 'consent' }
       });
-      if (result.error) error = result.error.message || 'Google could not be connected. Try again.';
+      if (result.error) error = result.error.message || 'Google didn’t connect. Try again.';
     } catch {
-      error = 'Google could not be reached. Your contacts are still saved here. Try again.';
+      error = 'Couldn’t reach Google. Nothing changed here. Try again.';
     } finally {
       busy = false;
     }
@@ -48,102 +63,88 @@
         progress += result.imported;
         photoSkipped += result.photoSkipped;
         if (!result.ok) {
-          error = `${progress} contacts imported. ${result.message}`;
+          error = `Added ${progress} of ${total}. ${result.message}`;
           return;
         }
       }
       notify(
-        `${progress} contacts added to Google${photoSkipped ? `. ${photoSkipped} photos could not be transferred.` : '.'}`
+        `Added ${progress} to Google${photoSkipped ? `. ${photoSkipped} photos couldn’t be copied.` : ''}`
       );
     } catch {
-      error =
-        'The import was interrupted. Completed contacts are preserved. Refresh this page to see which contacts still need importing.';
+      error = `Stopped after adding ${progress} of ${total}. Refresh to see who’s left.`;
     } finally {
       busy = false;
     }
   }
 </script>
 
-<svelte:head><title>Google Contacts | Contacts Exchange</title></svelte:head>
+<svelte:head><title>Export | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
   <div>
-    <h1>Your people. Wherever you need them.</h1>
-    <p {...stylex.attrs(ui.subtitle)}>
-      From your address book to your next call, text, or birthday card.
-    </p>
+    <h1>Export</h1>
+    <p {...stylex.attrs(ui.subtitle)}>Take your contacts to your phone or another app.</p>
   </div>
 </div>
-<div {...stylex.attrs(styles.container)}>
-  <section {...stylex.attrs(ui.panel, styles.connection)}>
-    <div {...stylex.attrs(styles.identity)}>
-      <span {...stylex.attrs(styles.google)}>G</span>
-      <div {...stylex.attrs(styles.name)}>
-        <h2>Google Contacts</h2>
-        <p {...stylex.attrs(ui.help)}>Bring your new contacts along.</p>
-      </div>
-      <span {...stylex.attrs(ui.badge, connection.status === 'connected' && ui.green)}
-        >{connection.status === 'connected' ? 'Connected' : 'Not connected'}</span
-      >
+<div {...stylex.attrs(styles.stack)}>
+  <section {...stylex.attrs(ui.panel, styles.section)} aria-labelledby="google-title">
+    <div {...stylex.attrs(styles.heading)}>
+      <h2 id="google-title">Google Contacts</h2>
+      {#if connection.status === 'connected'}<span {...stylex.attrs(ui.badge, ui.green)}
+          >Connected</span
+        >{/if}
     </div>
-    <p {...stylex.attrs(styles.description)}>
-      Add the contact cards you’ve collected to Google Contacts, including addresses, birthdays,
-      notes, and photos. They’ll be there on the devices you sync with Google.
+    <p {...stylex.attrs(styles.text)}>
+      Add your contacts to Google, including photos, addresses, and birthdays. If your phone syncs
+      with Google, they’ll appear there too.
     </p>
-    {#if connection.status === 'connected'}<div {...stylex.attrs(styles.syncInfo)}>
-        {imports.filter((i) => i.status === 'done').length} already imported. {pending.length} ready to
-        add.
-      </div>
+    {#if connection.status === 'connected'}
+      <p {...stylex.attrs(styles.text)}>{summary}</p>
       <div {...stylex.attrs(styles.actions)}>
-        <button
-          {...stylex.attrs(ui.button, ui.primary)}
-          disabled={busy || !pending.length}
-          onclick={importContacts}
-          >{#if busy}<RefreshCw size={16} />Adding {progress} of {total}…{:else}<ArrowUpRight
-              size={16}
-            />Add {pending.length}
-            {pending.length === 1 ? 'contact' : 'contacts'} to Google{/if}</button
-        ><button {...stylex.attrs(styles.reconnect)} disabled={busy} onclick={connect}
-          >Reconnect account</button
+        {#if pending.length}<button
+            {...stylex.attrs(ui.button, ui.primary)}
+            disabled={busy}
+            onclick={importContacts}
+            >{busy ? `Adding ${progress} of ${total}…` : `Add ${pending.length} to Google`}</button
+          >{/if}<button {...stylex.attrs(ui.textButton)} disabled={busy} onclick={connect}
+          >Reconnect</button
         >
       </div>
     {:else if connection.status === 'demo'}<a {...stylex.attrs(ui.button, ui.primary)} href="/login"
-        >Create an account to connect Google <ArrowUpRight size={16} /></a
+        >Create an account to connect Google</a
       >
-      <p {...stylex.attrs(ui.help)}>Sample contacts stay in this demo workspace.</p>
-    {:else if connection.status === 'unavailable'}<p {...stylex.attrs(styles.syncInfo)}>
-        Google Contacts is not available yet. You can download your contacts below and import the
-        file into Google Contacts.
+    {:else if connection.status === 'unavailable'}<p {...stylex.attrs(styles.text)}>
+        Google isn’t available right now. Download a file below and import it into Google Contacts
+        instead.
       </p>
     {:else}<button {...stylex.attrs(ui.button, ui.primary)} disabled={busy} onclick={connect}
-        >Connect Google Contacts <ArrowUpRight size={16} /></button
+        >Connect Google</button
       >{/if}
-    {#if error}<p {...stylex.attrs(ui.formError, styles.actions)} role="alert">{error}</p>{/if}
-    {#if uncertain.length}<div {...stylex.attrs(styles.uncertain)}>
-        These imports could not be confirmed. Check Google Contacts before adding them manually. We
-        won’t retry automatically, to avoid duplicates.
+    {#if error}<p {...stylex.attrs(ui.formError, styles.after)} role="alert">{error}</p>{/if}
+    {#if uncertain.length}<div {...stylex.attrs(styles.uncertain)} role="status">
+        <p>
+          We couldn’t confirm these were added. Check Google before adding them by hand. We won’t
+          retry, to avoid duplicates.
+        </p>
         <ul {...stylex.attrs(styles.uncertainList)}>
-          {#each uncertain as contact}<li>
+          {#each uncertain as contact (contact.id)}<li>
               {contact.data.firstName}
               {contact.data.lastName}
             </li>{/each}
         </ul>
       </div>{/if}
-    <p {...stylex.attrs(styles.note)}>
-      <ShieldCheck size={17} />You choose when to import. We don’t read or overwrite your existing
-      Google contacts. Cards already imported by Contacts Exchange are skipped; existing contacts
-      you added outside Contacts Exchange may still need merging in Google.
+    <p {...stylex.attrs(styles.fine)}>
+      We only add contacts. Nothing already in Google is read or changed, so you may need to merge
+      duplicates there.
     </p>
   </section>
-  <section {...stylex.attrs(ui.panel, styles.exportPanel)}>
-    <span {...stylex.attrs(ui.emptyIcon)}><ContactRound size={23} /></span>
-    <div {...stylex.attrs(styles.exportInfo)}>
-      <h3 {...stylex.attrs(styles.exportTitle)}>An address book that travels.</h3>
-      <p {...stylex.attrs(styles.exportText)}>
-        Download all {book.contacts.length} contacts as a .vcf file. Import it into Google Contacts, Apple
-        Contacts, Outlook, or your favorite address book.
-      </p>
-    </div>
-    <a {...stylex.attrs(ui.button)} href="/export" download><Download size={16} />Download vCards</a
-    >
+  <section {...stylex.attrs(ui.panel, styles.section)} aria-labelledby="file-title">
+    <h2 id="file-title" {...stylex.attrs(styles.heading)}>Download a file</h2>
+    <p {...stylex.attrs(styles.text)}>
+      A vCard (.vcf) works with Apple Contacts, Outlook, Google, and most other apps.
+    </p>
+    {#if book.contacts.length}<a {...stylex.attrs(ui.button)} href="/export" download
+        ><Download size={16} />Download {book.contacts.length}
+        {book.contacts.length === 1 ? 'contact' : 'contacts'}</a
+      >{:else}<p {...stylex.attrs(styles.fine)}>Nothing to download yet.</p>{/if}
   </section>
 </div>

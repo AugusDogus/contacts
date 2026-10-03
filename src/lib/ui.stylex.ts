@@ -15,9 +15,9 @@ export const ui = stylex.create({
     borderColor: { default: '#dfe3eb', [media.hover]: { ':hover': '#cbd2df' } },
     backgroundColor: { default: tokens.paper, [media.hover]: { ':hover': '#f8f9fc' } },
     color: tokens.ink,
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: 600,
-    minHeight: 41,
+    minHeight: 42,
     whiteSpace: 'nowrap',
     cursor: { default: 'pointer', ':disabled': 'not-allowed' },
     opacity: { default: 1, ':disabled': 0.55 },
@@ -34,14 +34,9 @@ export const ui = stylex.create({
     borderColor: tokens.blue,
     boxShadow: '0 2px 3px #2949bc18'
   },
-  soft: {
-    borderColor: 'transparent',
-    backgroundColor: { default: tokens.blueSoft, [media.hover]: { ':hover': '#e3eaff' } },
-    color: tokens.blue
-  },
   danger: { color: '#ad3e4e', borderColor: '#f0d9dd' },
   full: { width: '100%' },
-  small: { paddingBlock: 7, paddingInline: 11, minHeight: 34, fontSize: 12 },
+  small: { paddingBlock: 7, paddingInline: 12, minHeight: 36, fontSize: 13 },
   iconButton: {
     display: 'inline-flex',
     justifyContent: 'center',
@@ -79,18 +74,24 @@ export const ui = stylex.create({
     marginTop: 0
   },
   muted: { color: tokens.muted },
-  tiny: { fontSize: 12 },
-  subtitle: { color: tokens.muted, marginTop: 9, fontSize: 14 },
+  subtitle: { color: tokens.muted, marginTop: 6, fontSize: 15, maxWidth: 560 },
   pageHeading: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: { default: 'center', [media.mobile]: 'flex-start' },
-    gap: 20,
-    marginBottom: 30,
-    flexDirection: { default: 'row', [media.mobile]: 'column' },
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 28,
     flexWrap: 'wrap'
   },
-  headingActions: { display: 'flex', gap: 10, flexWrap: 'wrap' },
+  textButton: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    padding: 0,
+    color: tokens.blue,
+    fontSize: 'inherit',
+    fontWeight: 500,
+    textDecoration: { default: 'none', [media.hover]: { ':hover': 'underline' } }
+  },
   badge: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -98,13 +99,12 @@ export const ui = stylex.create({
     borderRadius: 5,
     paddingBlock: 3,
     paddingInline: 8,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 500,
     backgroundColor: '#f0f2f6',
     color: '#626e82'
   },
   green: { color: '#467559', backgroundColor: '#edf5ee' },
-  blue: { color: '#506bc3', backgroundColor: '#eff2fb' },
   amber: { color: '#96752b', backgroundColor: '#fbf5e6' },
   panel: {
     borderWidth: 1,
@@ -132,17 +132,17 @@ export const ui = stylex.create({
     paddingInline: 14,
     fontSize: 13
   },
-  help: { fontSize: 12, color: tokens.muted, fontWeight: 400, marginTop: 7 },
+  help: { fontSize: 13, color: tokens.muted, fontWeight: 400, marginTop: 6 },
   emptyState: {
     textAlign: 'center',
-    paddingBlock: 70,
+    paddingBlock: 56,
     paddingInline: 24,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 14
   },
-  emptyText: { maxWidth: 350, color: tokens.muted },
+  emptyText: { maxWidth: 400, color: tokens.muted },
   emptyIcon: {
     display: 'grid',
     placeItems: 'center',
@@ -152,6 +152,31 @@ export const ui = stylex.create({
     backgroundColor: tokens.blueSoft,
     color: tokens.blue,
     marginBottom: 5
+  },
+  segmented: {
+    display: 'flex',
+    maxWidth: '100%',
+    overflowX: 'auto',
+    padding: 3,
+    gap: 2,
+    borderRadius: 9,
+    backgroundColor: '#eef0f4'
+  },
+  segment: {
+    borderWidth: 0,
+    borderRadius: 7,
+    paddingBlock: 7,
+    paddingInline: 12,
+    fontSize: 14,
+    fontWeight: 500,
+    whiteSpace: 'nowrap',
+    color: tokens.muted,
+    backgroundColor: 'transparent'
+  },
+  segmentOn: {
+    color: tokens.ink,
+    backgroundColor: tokens.paper,
+    boxShadow: '0 1px 2px #29324718'
   },
   srOnly: {
     position: 'absolute',
@@ -167,7 +192,7 @@ export const ui = stylex.create({
   toastRegion: {
     position: 'fixed',
     zIndex: 100,
-    bottom: 24,
+    bottom: { default: 24, [media.mobile]: 84 },
     left: '50%',
     transform: 'translateX(-50%)',
     width: 'max-content',
@@ -185,14 +210,5 @@ export const ui = stylex.create({
     boxShadow: '0 8px 30px #29324722',
     maxWidth: 520,
     fontSize: 13
-  },
-  toastDismiss: { color: '#c3c9d8' },
-  link: { display: 'inline-flex', alignItems: 'center', gap: 6, color: tokens.blue, fontSize: 13 },
-  divider: {
-    borderWidth: 0,
-    borderTopWidth: 1,
-    borderStyle: 'solid',
-    borderColor: tokens.line,
-    marginBlock: 24
   }
 });

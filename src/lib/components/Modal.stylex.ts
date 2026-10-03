@@ -5,7 +5,7 @@ export const styles = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: tokens.line,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 0,
     width: 'min(520px, calc(100vw - 32px))',
     maxHeight: 'calc(100dvh - 48px)',
@@ -22,5 +22,5 @@ export const styles = stylex.create({
     gap: 20,
     marginBottom: 20
   },
-  title: { fontSize: 25, margin: 0 }
+  title: { fontSize: 22, margin: 0, overflowWrap: 'anywhere' }
 });

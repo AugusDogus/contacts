@@ -5,7 +5,7 @@
   body {
     margin: 0;
     font-family: 'Instrument Sans', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.55;
     color: #293247;
     background: #f7f8fa;
@@ -59,13 +59,14 @@
     letter-spacing: -0.7px;
   }
   h1 {
-    font-size: 34px;
+    font-size: 30px;
   }
   h2 {
-    font-size: 24px;
+    font-size: 20px;
+    letter-spacing: -0.4px;
   }
   h3 {
-    font-size: 18px;
+    font-size: 16px;
     letter-spacing: -0.3px;
   }
   svg {
@@ -81,11 +82,11 @@
   label {
     display: block;
     font-weight: 500;
-    font-size: 13px;
+    font-size: 14px;
   }
   @media (max-width: 650px) {
     h1 {
-      font-size: 29px;
+      font-size: 26px;
     }
   }
 }

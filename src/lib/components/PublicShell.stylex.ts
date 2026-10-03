@@ -3,71 +3,57 @@ import { tokens, media } from '../tokens.stylex';
 export const styles = stylex.create({
   shell: {
     minHeight: '100dvh',
-    paddingTop: 30,
-    paddingInline: { default: 30, [media.mobile]: 18 },
-    paddingBottom: 36,
-    backgroundColor: '#f5f7fc'
+    paddingTop: { default: 28, [media.mobile]: 20 },
+    paddingInline: { default: 32, [media.mobile]: 16 },
+    paddingBottom: 48,
+    backgroundColor: tokens.surface
   },
   header: {
-    maxWidth: 1080,
+    maxWidth: 1040,
     marginInline: 'auto',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 38
+    marginBottom: { default: 48, [media.mobile]: 32 }
   },
-  label: { fontSize: 12, color: '#8995ad' },
-  content: { width: '100%', maxWidth: 640, marginInline: 'auto' },
-  intro: { textAlign: 'center', marginBottom: 27 },
+  content: { width: '100%', maxWidth: 600, marginInline: 'auto' },
+  intro: { textAlign: 'center', marginBottom: 28 },
   avatar: {
     display: 'grid',
     placeItems: 'center',
-    width: 57,
-    height: 57,
-    borderRadius: 18,
-    backgroundColor: '#e2e9fc',
-    color: '#6d80b7',
+    width: 56,
+    height: 56,
+    borderRadius: '50%',
+    backgroundColor: tokens.blueSoft,
+    color: tokens.blue,
     fontFamily: tokens.heading,
-    fontSize: 25,
+    fontSize: 24,
+    fontWeight: 600,
     marginInline: 'auto',
-    marginBottom: 18
+    marginBottom: 16
   },
-  from: { fontSize: 12, color: '#8190ac', marginBottom: 12 },
-  title: { fontSize: { default: 36, [media.mobile]: 30 } },
+  title: { fontSize: { default: 30, [media.mobile]: 25 }, overflowWrap: 'anywhere' },
   message: {
-    maxWidth: 430,
+    maxWidth: 460,
+    marginTop: 12,
     marginInline: 'auto',
-    marginTop: 14,
     color: tokens.muted,
-    fontSize: 14,
-    lineHeight: 1.8,
-    overflowWrap: 'anywhere'
+    overflowWrap: 'anywhere',
+    whiteSpace: 'pre-line'
   },
   card: {
     backgroundColor: tokens.paper,
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: tokens.line,
-    borderRadius: 17,
-    padding: { default: 32, [media.mobile]: 22 },
-    boxShadow: '0 5px 30px #38487104'
+    borderRadius: 16,
+    padding: { default: 32, [media.mobile]: 20 }
   },
-  footer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    fontSize: 11,
-    color: '#8895a9',
-    marginTop: 25
-  },
+  footer: { marginTop: 20, textAlign: 'center', fontSize: 13, color: tokens.muted },
   closed: {
-    paddingBlock: 25,
+    paddingBlock: 12,
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 18
+    gap: 14
   },
-  closedText: { maxWidth: 380, color: tokens.muted, fontSize: 14, lineHeight: 1.8 }
+  closedText: { maxWidth: 400, color: tokens.muted }
 });

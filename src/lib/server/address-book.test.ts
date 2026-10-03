@@ -4,6 +4,7 @@ import { testDatabase } from '../../../test/database';
 import { addressBook } from './address-book';
 import { contacts, invitations } from './schema';
 import { Contact } from '../contact';
+import { createHash, randomBytes } from 'node:crypto';
 
 const cleanup: (() => void)[] = [];
 afterEach(() => {
@@ -26,6 +27,33 @@ async function setup() {
   return { db, book, owner, other, invite, contact };
 }
 describe('private invitations', () => {
+  test('creates short tokens containing the searchable invitation reference', async () => {
+    const { invite } = await setup();
+    expect(invite.token).toMatch(/^[A-Za-z0-9_-]{24}$/);
+    expect(invite.token.startsWith(invite.id.slice(0, 8))).toBe(true);
+  });
+  test('resolves the current page after a rename and preserves closed invitation states', async () => {
+    const { book, owner, invite, contact } = await setup();
+    expect(await book.invitationPage('unknown')).toBeNull();
+    expect(await book.invitationPage(invite.token)).toBe(owner.slug);
+    await book.saveProfile(owner.ownerId, { name: owner.name, slug: 'new-address', message: '' });
+    expect(await book.invitationPage(invite.token)).toBe('new-address');
+    expect((await book.submit(invite.token, 'new-address', contact)).ok).toBe(true);
+    expect(await book.invitationPage(invite.token)).toBe('new-address');
+    expect(await book.invitation(invite.token, 'new-address')).toBeNull();
+  });
+  test('existing long tokens still resolve and accept one submission', async () => {
+    const { db, book, owner, invite, contact } = await setup();
+    const token = randomBytes(32).toString('base64url');
+    await db
+      .update(invitations)
+      .set({ tokenHash: createHash('sha256').update(token).digest('hex') })
+      .where(eq(invitations.id, invite.id));
+    expect(await book.invitationPage(token)).toBe(owner.slug);
+    expect(await book.invitation(token, owner.slug)).not.toBeNull();
+    expect((await book.submit(token, owner.slug, contact)).ok).toBe(true);
+    expect((await book.submit(token, owner.slug, contact)).ok).toBe(false);
+  });
   test('accepts exactly one concurrent submission and scopes contacts to the owner', async () => {
     const { book, owner, other, invite, contact } = await setup();
     const results = await Promise.all([

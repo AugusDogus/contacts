@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ContactForm.stylex.ts';
   import { Contact, contactInput, type ContactInput } from '#lib/contact.ts';
-  import { Camera, MapPin, Heart, ArrowUpRight } from '@lucide/svelte';
+  import { Camera } from '@lucide/svelte';
   import Avatar from './Avatar.svelte';
   type Result = { ok: true } | { ok: false; message: string };
   let {
     initial = Contact.empty(),
     recipient,
-    buttonLabel = 'Share my contact card',
+    buttonLabel = 'Send my details',
     onsave
   }: {
     initial?: ContactInput;
@@ -23,6 +23,10 @@
   let busy = $state(false);
   let photoBusy = $state(false);
   let error = $state('');
+  let ready = $state(false);
+  onMount(() => {
+    ready = true;
+  });
   async function photo(file: File | undefined) {
     if (!file) return;
     error = '';
@@ -42,8 +46,7 @@
       const context = canvas.getContext('2d');
       if (!context) {
         bitmap.close();
-        error =
-          'Your browser could not prepare the photo. Try another browser or continue without it.';
+        error = 'Your browser couldn’t prepare this photo. Try another one, or skip it.';
         return;
       }
       const side = Math.min(bitmap.width, bitmap.height);
@@ -61,7 +64,7 @@
       bitmap.close();
       value.photo = canvas.toDataURL('image/jpeg', 0.85);
     } catch {
-      error = 'This photo could not be opened. Try another image or continue without it.';
+      error = 'That photo couldn’t be opened. Try another one, or skip it.';
     } finally {
       photoBusy = false;
     }
@@ -70,13 +73,13 @@
     error = '';
     const parsed = contactInput.safeParse(value);
     if (!parsed.success) {
-      error = parsed.error.issues[0]?.message || 'Check your contact details.';
+      error = parsed.error.issues[0]?.message || 'Check your details.';
       const field = form.elements.namedItem(String(parsed.error.issues[0]?.path[0]));
       if (field instanceof HTMLElement) field.focus();
       return;
     }
     if (recipient && !consent) {
-      error = 'Confirm that you want to share your details with your friend.';
+      error = `Tick the box to confirm you’re sharing these details with ${recipient}.`;
       return;
     }
     busy = true;
@@ -87,7 +90,7 @@
       error =
         cause instanceof Error
           ? cause.message
-          : 'Your card could not be saved. Your details are still here. Try again.';
+          : 'Your details weren’t saved. Everything you typed is still here. Try again.';
     } finally {
       busy = false;
     }
@@ -95,6 +98,7 @@
 </script>
 
 <form
+  method="POST"
   {...stylex.attrs(styles.form)}
   onsubmit={(event) => {
     event.preventDefault();
@@ -107,10 +111,9 @@
       >{/if}
     <div>
       <label {...stylex.attrs(styles.photoLabel)} for="contact-photo"
-        >{photoBusy ? 'Preparing your photo…' : 'Add a face to the name'}
-        <span {...stylex.attrs(styles.optional)}>(optional)</span></label
+        >{photoBusy ? 'Preparing photo…' : 'Photo'}
+        <span {...stylex.attrs(styles.optional)}>Optional</span></label
       >
-      <p {...stylex.attrs(styles.photoHelp)}>JPEG, PNG, or WebP. We’ll take care of the size.</p>
       <input
         {...stylex.attrs(styles.file)}
         id="contact-photo"
@@ -121,7 +124,7 @@
       />{#if value.photo}<button
           type="button"
           {...stylex.attrs(ui.button, ui.small)}
-          onclick={() => (value.photo = '')}>Remove photo</button
+          onclick={() => (value.photo = '')}>Remove</button
         >{/if}
     </div>
   </div>
@@ -168,16 +171,11 @@
       /></label
     >
   </div>
-  <p {...stylex.attrs(ui.help)}>Share an email or phone number. Everything below is optional.</p>
-  <section {...stylex.attrs(styles.section)}>
-    <div {...stylex.attrs(styles.sectionHeader)}>
-      <MapPin size={17} color="#8e9cb3" />
-      <h3 {...stylex.attrs(styles.sectionTitle)}>
-        Somewhere to send a little something <span {...stylex.attrs(styles.optional)}
-          >(optional)</span
-        >
-      </h3>
-    </div>
+  <p {...stylex.attrs(styles.hint)}>
+    Add an email or phone number. The remaining fields are optional.
+  </p>
+  <section {...stylex.attrs(styles.section)} aria-labelledby="form-address">
+    <h3 id="form-address" {...stylex.attrs(styles.sectionTitle)}>Mailing address</h3>
     <div {...stylex.attrs(ui.formGrid)}>
       <label {...stylex.attrs(ui.span2)}
         >Street address<input
@@ -197,7 +195,7 @@
           maxlength="100"
         /></label
       ><label
-        >State / province / region<input
+        >State or region<input
           {...stylex.attrs(ui.input)}
           name="region"
           autocomplete="address-level1"
@@ -223,13 +221,8 @@
       >
     </div>
   </section>
-  <section {...stylex.attrs(styles.section)}>
-    <div {...stylex.attrs(styles.sectionHeader)}>
-      <Heart size={17} color="#a993ab" />
-      <h3 {...stylex.attrs(styles.sectionTitle)}>
-        The little details <span {...stylex.attrs(styles.optional)}>(optional)</span>
-      </h3>
-    </div>
+  <section {...stylex.attrs(styles.section)} aria-labelledby="form-more">
+    <h3 id="form-more" {...stylex.attrs(styles.sectionTitle)}>More</h3>
     <div {...stylex.attrs(ui.formGrid)}>
       <label
         >Birthday<input
@@ -247,17 +240,16 @@
           name="pronouns"
           bind:value={value.pronouns}
           maxlength="60"
-          placeholder="e.g. she / her"
+          placeholder="she/her"
         /></label
       ><label {...stylex.attrs(ui.span2)}
-        >Anything else to know?<textarea
+        >Notes<textarea
           {...stylex.attrs(ui.input)}
           name="notes"
           bind:value={value.notes}
           maxlength="2000"
           rows="3"
-          placeholder="The best way to reach you, a favorite thing, or a little life update…"
-        ></textarea></label
+          placeholder="Best way to reach you, or anything else worth knowing"></textarea></label
       >
     </div>
   </section>
@@ -292,16 +284,14 @@
         bind:checked={consent}
         required
       /><span
-        >I’m happy to share these details with {recipient} for their private address book, including any
-        address book they export them to.</span
+        >Share these details with {recipient}. They can keep them in their address book and export
+        them to other apps.</span
       ></label
     >{/if}
   {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
-  <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={busy || photoBusy}
-    >{busy ? 'Saving your card…' : buttonLabel}<ArrowUpRight size={16} /></button
+  <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={!ready || busy || photoBusy}
+    >{busy ? (recipient ? 'Sending…' : 'Saving…') : buttonLabel}</button
   >
-  {#if recipient}<p {...stylex.attrs(styles.saveNote)}>
-      No account needed. Just you, keeping in touch.
-    </p>{/if}
-  <noscript><p>Enable JavaScript to securely share your contact card.</p></noscript>
+  {#if recipient}<p {...stylex.attrs(styles.saveNote)}>No account needed.</p>{/if}
+  <noscript><p>Turn on JavaScript to send your details.</p></noscript>
 </form>

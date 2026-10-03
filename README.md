@@ -38,7 +38,7 @@ Use `bun run db:generate` after schema changes. `bun run db:migrate` applies mig
 - Optional Google Contacts import, with completed imports tracked per Google account.
 - Optional account linking after submission. A receipt in an HTTP-only cookie lets the submitter save their own card for future invitations.
 
-Full invitation URLs are displayed once. Only token hashes are stored. Submission and invitation consumption execute as one atomic Turso batch. An invitation stays consumed even if its contact is deleted. Changing a page name breaks its old invitation URLs, and the UI asks for confirmation when pending invitations exist.
+Full invitation URLs are displayed once. New links use `contacts.exchange/i/<token>` with a 24-character token: an eight-character searchable reference plus a 96-bit random secret. Only token hashes are stored. Submission and invitation consumption execute as one atomic Turso batch. An invitation stays consumed even if its contact is deleted. Short links resolve the current page name and survive renames. Older subdomain links with 43-character tokens still work, but changing a page name breaks those older URLs.
 
 Photos are resized to 512 pixels at most, re-encoded as JPEG, and stripped of metadata. They are stored with the private contact record, not in a public upload directory. The current address-book view loads all cards, which is intended for personal-sized books.
 

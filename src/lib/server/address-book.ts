@@ -74,19 +74,32 @@ export function addressBook(db: AppDatabase) {
     return rows.map(({ tokenHash: _hash, ...invitation }) => invitation);
   }
   async function createInvitations(ownerId: string, count: number, label: string) {
-    const generated = Array.from({ length: count }, (_, index) => ({
-      id: randomUUID(),
-      ownerId,
-      token: randomBytes(32).toString('base64url'),
-      label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
-      status: 'pending' as const,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 30 * 86_400_000
-    }));
+    const generated = Array.from({ length: count }, (_, index) => {
+      const id = randomUUID();
+      return {
+        id,
+        ownerId,
+        // Searchable reference plus a 96-bit secret. Only the full token hash is stored.
+        token: id.slice(0, 8) + randomBytes(12).toString('base64url'),
+        label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
+        status: 'pending' as const,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 30 * 86_400_000
+      };
+    });
     await db
       .insert(invitations)
       .values(generated.map(({ token, ...invite }) => ({ ...invite, tokenHash: hash(token) })));
     return generated;
+  }
+  async function invitationPage(token: string) {
+    const result = await db
+      .select({ slug: profiles.slug })
+      .from(invitations)
+      .innerJoin(profiles, eq(profiles.ownerId, invitations.ownerId))
+      .where(eq(invitations.tokenHash, hash(token)))
+      .get();
+    return result?.slug ?? null;
   }
   async function invitation(token: string, slug: string) {
     const result = await db
@@ -218,6 +231,7 @@ export function addressBook(db: AppDatabase) {
     contacts: listContacts,
     invitations: listInvitations,
     createInvitations,
+    invitationPage,
     invitation,
     submit,
     claim,

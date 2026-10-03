@@ -1,70 +1,56 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens } from '../tokens.stylex';
 export const styles = stylex.create({
-  form: { display: 'flex', flexDirection: 'column', gap: 25 },
-  photoRow: { display: 'flex', alignItems: 'center', gap: 17, marginBottom: 3 },
+  form: { display: 'flex', flexDirection: 'column', gap: 24 },
+  photoRow: { display: 'flex', alignItems: 'center', gap: 16 },
   photoPlaceholder: {
     width: 64,
     height: 64,
-    backgroundColor: '#f0f3fb',
+    flexShrink: 0,
+    backgroundColor: tokens.surface,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#ccd5e8',
+    borderColor: '#cfd5e2',
     borderRadius: '50%',
     display: 'grid',
     placeItems: 'center',
-    color: '#97a5be'
+    color: tokens.muted
   },
-  photoLabel: {
-    cursor: 'pointer',
-    display: 'inline-flex',
-    color: tokens.blue,
-    fontSize: 12,
-    alignItems: 'center',
-    gap: 6
-  },
+  photoLabel: { display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 6 },
   file: {
     width: '100%',
     maxWidth: 260,
-    fontSize: 11,
+    fontSize: 13,
     color: tokens.muted,
     '::file-selector-button': {
       borderWidth: 0,
-      borderRadius: 5,
-      paddingBlock: 5,
-      paddingInline: 9,
+      borderRadius: 6,
+      paddingBlock: 6,
+      paddingInline: 10,
       backgroundColor: tokens.blueSoft,
       color: tokens.blue,
       cursor: 'pointer',
-      marginRight: 8
+      marginRight: 10
     }
   },
-  photoHelp: { fontSize: 10, color: tokens.muted, marginTop: 7 },
+  hint: { fontSize: 13, color: tokens.muted, marginTop: -10 },
   section: {
     borderTopWidth: 1,
     borderTopStyle: 'solid',
     borderTopColor: tokens.line,
-    paddingTop: 23
+    paddingTop: 22
   },
-  sectionHeader: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 17 },
-  sectionTitle: { fontSize: 17 },
-  optional: {
-    fontFamily: tokens.font,
-    fontSize: 11,
-    fontWeight: 400,
-    color: tokens.muted,
-    letterSpacing: 0
-  },
-  summary: { fontSize: 13, color: '#6d7b96', cursor: 'pointer', marginBottom: 18 },
+  sectionTitle: { marginBottom: 14 },
+  optional: { fontSize: 13, fontWeight: 400, color: tokens.muted },
+  summary: { fontSize: 14, color: tokens.blue, cursor: 'pointer', marginBottom: 16 },
   consent: {
     display: 'flex',
     alignItems: 'flex-start',
     gap: 10,
-    fontSize: 12,
+    fontSize: 14,
     color: tokens.muted,
-    fontWeight: 400,
-    lineHeight: 1.7
+    fontWeight: 400
   },
   consentCheck: { marginTop: 3 },
-  saveNote: { color: tokens.muted, fontSize: 11, textAlign: 'center', marginTop: -13 }
+  saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center', marginTop: -12 }
 });

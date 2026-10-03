@@ -5,11 +5,12 @@ import { addressBook } from './server/address-book';
 import { db } from './server/db';
 import { normalizePhoto } from './server/photo';
 import { claimCookieDomain } from './server/claim-cookie';
+import { invitationTokenPattern } from './invitation-token';
 
 export const submitContact = command(
   z.object({
     slug: z.string().max(40),
-    token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+    token: z.string().regex(invitationTokenPattern),
     contact: contactInput,
     consent: z.literal(true)
   }),

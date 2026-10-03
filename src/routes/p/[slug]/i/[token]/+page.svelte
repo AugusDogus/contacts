@@ -9,40 +9,40 @@
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let done = $state(false);
+  let name = $derived(data.profile.name);
 </script>
 
 <svelte:head
-  ><title>A contact card for {data.profile.name} | Contacts Exchange</title><meta
+  ><title>Share your details with {name} | Contacts Exchange</title><meta
     name="robots"
     content="noindex, nofollow"
   /></svelte:head
 >
-<PublicShell name={data.profile.name} message={data.profile.message}>
-  {#if done}<div {...stylex.attrs(styles.closed)}>
-      <span {...stylex.attrs(ui.emptyIcon)}><Check size={28} /></span>
-      <h2>A little closer already.</h2>
+{#if done}<PublicShell {name} title="Sent to {name}"
+    ><div {...stylex.attrs(styles.closed)} role="status">
+      <span {...stylex.attrs(ui.emptyIcon)}><Check size={26} /></span>
       <p {...stylex.attrs(styles.closedText)}>
-        Your contact card is safely in {data.profile.name}'s address book. That’s all you need to
-        do.
+        Your details are in {name}’s address book. You can close this page.
       </p>
-      <p {...stylex.attrs(ui.muted, ui.tiny)}>
-        Want a circle of your own? Create an account and save your card to use again.
-      </p>
-      <a {...stylex.attrs(ui.button, ui.primary)} href="{data.appUrl}/login?claim=1"
-        >Save my card and start my address book</a
-      >
-    </div>
-  {:else if !data.valid}<div {...stylex.attrs(styles.closed)}>
-      <span {...stylex.attrs(ui.emptyIcon)}><LockKeyhole size={25} /></span>
-      <h2>This invitation is closed.</h2>
       <p {...stylex.attrs(styles.closedText)}>
-        It may have been used, expired, or revoked. If you already shared your details, they’re
-        saved. Otherwise, ask {data.profile.name} for a new link.
+        Want your own address book? Create an account and keep this card for next time.
       </p>
-    </div>
-  {:else}<ContactForm
+      <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login?claim=1">Create an account</a>
+    </div></PublicShell
+  >
+{:else if !data.valid}<PublicShell {name} title="This link no longer works"
+    ><div {...stylex.attrs(styles.closed)}>
+      <span {...stylex.attrs(ui.emptyIcon)}><LockKeyhole size={24} /></span>
+      <p {...stylex.attrs(styles.closedText)}>
+        It was already used, revoked, or it expired. If you already sent your details, they’re
+        saved. Otherwise, ask {name} for a new link.
+      </p>
+    </div></PublicShell
+  >
+{:else}<PublicShell {name} title="Share your details with {name}" message={data.profile.message}
+    ><ContactForm
       initial={data.savedCard ?? undefined}
-      recipient={data.profile.name}
+      recipient={name}
       onsave={async (contact) => {
         const result = await submitContact({
           slug: data.profile.slug,
@@ -53,5 +53,5 @@
         if (result.ok) done = true;
         return result;
       }}
-    />{/if}
-</PublicShell>
+    /></PublicShell
+  >{/if}

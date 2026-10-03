@@ -2,19 +2,7 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ContactDetail.stylex.ts';
-
-  import {
-    Mail,
-    Phone,
-    MapPin,
-    Cake,
-    Globe,
-    Building2,
-    Download,
-    Trash2,
-    Star,
-    MessageSquare
-  } from '@lucide/svelte';
+  import { Download, Star } from '@lucide/svelte';
   import { Contact } from '#lib/contact.ts';
   import { deleteContact, setFavorite } from '#lib/contacts.remote.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
@@ -23,11 +11,21 @@
   let { contact, onclose }: { contact: Contact; onclose: () => void } = $props();
   let confirming = $state(false);
   let deleting = $state(false);
+  let data = $derived(contact.data);
+  let place = $derived(
+    [
+      data.street,
+      [data.city, data.region, data.postalCode].filter(Boolean).join(', '),
+      data.country
+    ]
+      .filter(Boolean)
+      .join('\n')
+  );
   async function remove() {
     deleting = true;
     try {
       await deleteContact(contact.id);
-      notify('Contact removed from your address book');
+      notify(`${Contact.name(data)} removed`);
       onclose();
     } catch (cause) {
       failure(cause);
@@ -37,101 +35,70 @@
   }
 </script>
 
-<Modal title="Contact card" {onclose}>
-  <div {...stylex.attrs(styles.personHeader)}>
-    <Avatar person={contact.data} size={78} />
-    <h2>{Contact.name(contact.data)}</h2>
-    {#if contact.data.pronouns}<p {...stylex.attrs(ui.muted, ui.tiny)}>
-        {contact.data.pronouns}
-      </p>{/if}<button
-      {...stylex.attrs(styles.favoriteButton)}
-      aria-pressed={contact.favorite}
-      onclick={async () => {
-        try {
-          await setFavorite({ id: contact.id, favorite: !contact.favorite });
-        } catch (cause) {
-          failure(cause);
-        }
-      }}
-      ><Star size={14} fill={contact.favorite ? 'currentColor' : 'none'} />{contact.favorite
-        ? 'Favorite'
-        : 'Add to favorites'}</button
-    >
+<Modal title={Contact.name(data)} {onclose}>
+  <div {...stylex.attrs(styles.top)}>
+    <Avatar person={data} size={64} />
+    <div {...stylex.attrs(styles.topText)}>
+      {#if data.pronouns}<p {...stylex.attrs(ui.muted)}>{data.pronouns}</p>{/if}
+      <button
+        {...stylex.attrs(styles.favorite, contact.favorite && styles.favoriteOn)}
+        aria-pressed={contact.favorite}
+        onclick={async () => {
+          try {
+            await setFavorite({ id: contact.id, favorite: !contact.favorite });
+          } catch (cause) {
+            failure(cause);
+          }
+        }}><Star size={15} fill={contact.favorite ? 'currentColor' : 'none'} />Favorite</button
+      >
+    </div>
   </div>
-  <div {...stylex.attrs(styles.details)}>
-    {#if contact.data.email}<div {...stylex.attrs(styles.detailRow)}>
-        <Mail size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Email address</small><a
-            href="mailto:{contact.data.email}">{contact.data.email}</a
-          ></span
-        >
+  <dl {...stylex.attrs(styles.details)}>
+    {#if data.email}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Email</dt>
+        <dd {...stylex.attrs(styles.value)}><a href="mailto:{data.email}">{data.email}</a></dd>
       </div>{/if}
-    {#if contact.data.phone}<div {...stylex.attrs(styles.detailRow)}>
-        <Phone size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Phone number</small><a
-            href="tel:{contact.data.phone}">{contact.data.phone}</a
-          ></span
-        >
+    {#if data.phone}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Phone</dt>
+        <dd {...stylex.attrs(styles.value)}><a href="tel:{data.phone}">{data.phone}</a></dd>
       </div>{/if}
-    {#if contact.data.street || contact.data.city}<div {...stylex.attrs(styles.detailRow)}>
-        <MapPin size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Address</small>{contact.data.street}<br />{[
-            contact.data.city,
-            contact.data.region,
-            contact.data.postalCode
-          ]
-            .filter(Boolean)
-            .join(', ')}{#if contact.data.country}<br />{contact.data.country}{/if}</span
-        >
+    {#if place}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Address</dt>
+        <dd {...stylex.attrs(styles.value, styles.lines)}>{place}</dd>
       </div>{/if}
-    {#if contact.data.birthday}<div {...stylex.attrs(styles.detailRow)}>
-        <Cake size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Birthday</small>{Contact.birthdayLabel(
-            contact.data.birthday
-          )}<span {...stylex.attrs(ui.muted)}>, {contact.data.birthday.slice(0, 4)}</span></span
-        >
+    {#if data.birthday}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Birthday</dt>
+        <dd {...stylex.attrs(styles.value)}>
+          {Contact.birthdayLabel(data.birthday)}, {data.birthday.slice(0, 4)}
+        </dd>
       </div>{/if}
-    {#if contact.data.company}<div {...stylex.attrs(styles.detailRow)}>
-        <Building2 size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Company</small>{contact.data.company}</span
-        >
+    {#if data.company}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Company</dt>
+        <dd {...stylex.attrs(styles.value)}>{data.company}</dd>
       </div>{/if}
-    {#if contact.data.website}<div {...stylex.attrs(styles.detailRow)}>
-        <Globe size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>Website</small><a
-            href={contact.data.website}
-            target="_blank"
-            rel="noopener noreferrer">{contact.data.website}</a
-          ></span
-        >
+    {#if data.website}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Website</dt>
+        <dd {...stylex.attrs(styles.value)}>
+          <a href={data.website} target="_blank" rel="noopener noreferrer">{data.website}</a>
+        </dd>
       </div>{/if}
-    {#if contact.data.notes}<div {...stylex.attrs(styles.detailRow)}>
-        <MessageSquare size={17} /><span {...stylex.attrs(styles.detailText)}
-          ><small {...stylex.attrs(styles.detailLabel)}>A little more about me</small><span
-            {...stylex.attrs(styles.notes)}>{contact.data.notes}</span
-          ></span
-        >
+    {#if data.notes}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>Notes</dt>
+        <dd {...stylex.attrs(styles.value, styles.lines)}>{data.notes}</dd>
       </div>{/if}
-  </div>
-  {#if confirming}<div {...stylex.attrs(styles.removeConfirm)}>
-      <p>
-        Remove {contact.data.firstName} from your address book? This cannot be undone. Their invitation
-        will stay used.
-      </p>
-      <div {...stylex.attrs(styles.confirmActions)}>
-        <button {...stylex.attrs(ui.button)} onclick={() => (confirming = false)}
-          >Keep contact</button
-        ><button {...stylex.attrs(ui.button, ui.danger)} disabled={deleting} onclick={remove}
-          >{deleting ? 'Removing…' : 'Remove contact'}</button
-        >
+  </dl>
+  {#if confirming}<div {...stylex.attrs(styles.confirm)} role="alert">
+      <p>Remove {data.firstName} from your address book? This can’t be undone.</p>
+      <div {...stylex.attrs(styles.actions)}>
+        <button {...stylex.attrs(ui.button, ui.danger)} disabled={deleting} onclick={remove}
+          >{deleting ? 'Removing…' : 'Remove'}</button
+        ><button {...stylex.attrs(ui.button)} onclick={() => (confirming = false)}>Cancel</button>
       </div>
-    </div>{:else}<div {...stylex.attrs(styles.detailActions)}>
+    </div>{:else}<div {...stylex.attrs(styles.actions, styles.footer)}>
       <a {...stylex.attrs(ui.button)} href="/export?id={contact.id}" download
-        ><Download size={15} />Download vCard</a
-      ><button
-        {...stylex.attrs(ui.iconButton)}
-        aria-label="Remove contact"
-        onclick={() => (confirming = true)}><Trash2 size={17} /></button
+        ><Download size={16} />Download vCard</a
+      ><button {...stylex.attrs(ui.textButton, styles.remove)} onclick={() => (confirming = true)}
+        >Remove</button
       >
     </div>{/if}
 </Modal>

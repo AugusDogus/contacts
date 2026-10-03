@@ -2,52 +2,60 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './people.stylex.ts';
-
-  import {
-    Users,
-    Plus,
-    Download,
-    Search,
-    ArrowDownWideNarrow,
-    Star,
-    Cake,
-    ArrowUpRight,
-    ChevronRight,
-    Link,
-    ShieldCheck
-  } from '@lucide/svelte';
+  import { Plus, Search, Star, Hourglass, Cake } from '@lucide/svelte';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { Contact } from '#lib/contact.ts';
   import Avatar from '#lib/components/Avatar.svelte';
   import ContactStack from '#lib/components/ContactStack.svelte';
   import InviteDialog from '#lib/components/InviteDialog.svelte';
   import ContactDetail from '#lib/components/ContactDetail.svelte';
+  type View = 'all' | 'favorites' | 'recent';
+  const WEEK = 7 * 86_400_000;
   let book = $derived(await getAddressBook());
   let search = $state('');
-  let filter = $state('all');
-  let sort = $state('name');
+  let view = $state<View>('all');
+  let sort = $state<'name' | 'recent'>('name');
   let inviteOpen = $state(false);
   let selectedId = $state<string | null>(null);
   let selected = $derived(book.contacts.find((contact) => contact.id === selectedId));
+  let openInvitations = $derived(
+    book.invitations.filter((i) => i.status === 'pending' && i.expiresAt > Date.now()).length
+  );
+  let views = $derived(
+    [
+      { id: 'all', label: 'All', count: book.contacts.length },
+      {
+        id: 'favorites',
+        label: 'Favorites',
+        count: book.contacts.filter((c) => c.favorite).length
+      },
+      {
+        id: 'recent',
+        label: 'New this week',
+        count: book.contacts.filter((c) => Date.now() - c.createdAt < WEEK).length
+      }
+    ].filter(
+      (option): option is { id: View; label: string; count: number } =>
+        option.id === 'all' || (option.count > 0 && option.count < book.contacts.length)
+    )
+  );
+  let activeView = $derived(views.some((option) => option.id === view) ? view : 'all');
   let upcoming = $derived(
     book.contacts
-      .filter((c) => c.data.birthday)
-      .sort(
-        (a, b) =>
-          Contact.daysUntilBirthday(a.data.birthday) - Contact.daysUntilBirthday(b.data.birthday)
-      )
-      .slice(0, 3)
+      .map((contact) => ({ contact, days: Contact.daysUntilBirthday(contact.data.birthday) }))
+      .filter(({ days }) => days <= 30)
+      .sort((a, b) => a.days - b.days)
+      .slice(0, 4)
   );
   let filtered = $derived(
     book.contacts
       .filter((contact) => {
-        const matches = `${Contact.name(contact.data)} ${contact.data.email} ${contact.data.city}`
-          .toLowerCase()
-          .includes(search.toLowerCase());
+        const { email, phone, city } = contact.data;
+        const text = `${Contact.name(contact.data)} ${email} ${phone} ${city}`.toLowerCase();
         return (
-          matches &&
-          (filter !== 'favorites' || contact.favorite) &&
-          (filter !== 'recent' || Date.now() - contact.createdAt < 7 * 86_400_000)
+          text.includes(search.trim().toLowerCase()) &&
+          (activeView !== 'favorites' || contact.favorite) &&
+          (activeView !== 'recent' || Date.now() - contact.createdAt < WEEK)
         );
       })
       .sort((a, b) =>
@@ -56,227 +64,124 @@
           : b.createdAt - a.createdAt
       )
   );
-  let pending = $derived(
-    book.invitations.filter((i) => i.status === 'pending' && i.expiresAt > Date.now()).length
-  );
+  const when = (days: number, birthday: string) =>
+    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : Contact.birthdayLabel(birthday);
 </script>
 
-<svelte:head><title>Your people | Contacts Exchange</title></svelte:head>
+<svelte:head><title>People | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(ui.pageHeading)}>
-  <div>
-    <h1>Your people, in one place.</h1>
-    <p {...stylex.attrs(ui.subtitle)}>Less asking for addresses. More keeping in touch.</p>
-  </div>
-  <div {...stylex.attrs(ui.headingActions)}>
-    <a {...stylex.attrs(ui.button)} href="/export" download><Download size={16} />Export contacts</a
-    ><button {...stylex.attrs(ui.button, ui.primary)} onclick={() => (inviteOpen = true)}
-      ><Plus size={17} />Invite friends</button
-    >
-  </div>
+  <h1>People</h1>
+  {#if book.contacts.length}<button
+      {...stylex.attrs(ui.button, ui.primary)}
+      onclick={() => (inviteOpen = true)}><Plus size={17} />Invite someone</button
+    >{/if}
 </div>
-<section {...stylex.attrs(styles.welcomeBanner)} aria-label="Invite your friends">
-  <div {...stylex.attrs(styles.bannerContent)}>
-    <div {...stylex.attrs(styles.bannerLabel)}>
-      <span {...stylex.attrs(styles.bannerDot)}></span>A better way to stay connected
-    </div>
-    <h2 {...stylex.attrs(styles.bannerTitle)}>A little link.<br />A closer circle.</h2>
-    <p {...stylex.attrs(styles.bannerText)}>
-      Send a private invitation. Your friends add their details.<br
-        {...stylex.attrs(styles.desktopBr)}
-      /> Your address book takes care of the rest.
-    </p>
-    <button {...stylex.attrs(styles.bannerButton)} onclick={() => (inviteOpen = true)}
-      >Create an invitation <ArrowUpRight size={15} /></button
-    >
-  </div>
-  <div {...stylex.attrs(styles.artwork)}><ContactStack /></div>
-</section>
-<div {...stylex.attrs(styles.contentGrid)}>
-  <section {...stylex.attrs(styles.peopleSection)} aria-label="Contacts">
-    <div {...stylex.attrs(styles.sectionTop)}>
-      <h2 {...stylex.attrs(styles.sectionTitle)}>
-        Address book <span {...stylex.attrs(styles.count)}>{book.contacts.length}</span>
-      </h2>
-      <span {...stylex.attrs(styles.privateCaption)}
-        ><ShieldCheck size={13} />Only you can see this</span
-      >
-    </div>
-    <div {...stylex.attrs(ui.panel)}>
-      <div {...stylex.attrs(styles.tabs)} role="group" aria-label="Filter contacts">
-        <button
-          {...stylex.attrs(styles.tab, filter === 'all' && styles.chosen)}
-          aria-pressed={filter === 'all'}
-          onclick={() => (filter = 'all')}
-          >All people <span {...stylex.attrs(styles.tabCount)}>{book.contacts.length}</span></button
-        ><button
-          {...stylex.attrs(styles.tab, filter === 'favorites' && styles.chosen)}
-          aria-pressed={filter === 'favorites'}
-          onclick={() => (filter = 'favorites')}><Star size={13} />Favorites</button
-        ><button
-          {...stylex.attrs(styles.tab, filter === 'recent' && styles.chosen)}
-          aria-pressed={filter === 'recent'}
-          onclick={() => (filter = 'recent')}>Recently added</button
-        >
-      </div>
-      <div {...stylex.attrs(styles.tableToolbar)}>
-        <div {...stylex.attrs(styles.searchBox)}>
-          <Search size={16} /><input
-            {...stylex.attrs(ui.input, styles.searchInput)}
-            aria-label="Search people"
-            placeholder="Find a name, email, or city…"
-            bind:value={search}
-          /><span {...stylex.attrs(styles.searchHint)}>⌕</span>
-        </div>
-        <label {...stylex.attrs(styles.sortControl)}
-          ><ArrowDownWideNarrow size={15} /><span {...stylex.attrs(ui.srOnly)}>Sort contacts</span
-          ><select {...stylex.attrs(ui.input, styles.sortSelect)} bind:value={sort}
-            ><option value="name">Name</option><option value="recent">Newest</option></select
-          ></label
-        >
-      </div>
-      {#if filtered.length}<div>
-          <table {...stylex.attrs(styles.table)}>
-            <thead
-              ><tr
-                ><th {...stylex.attrs(styles.th, styles.firstCell)}>Name</th><th
-                  {...stylex.attrs(styles.th, styles.emailCell)}>Email address</th
-                ><th {...stylex.attrs(styles.th, styles.locationCell)}>Location</th><th
-                  {...stylex.attrs(styles.th, styles.lastCell)}
-                  ><span {...stylex.attrs(ui.srOnly)}>Open card</span></th
-                ></tr
-              ></thead
-            ><tbody
-              >{#each filtered as contact}<tr {...stylex.attrs(styles.row)}
-                  ><td {...stylex.attrs(styles.td, styles.firstCell)}
-                    ><button
-                      {...stylex.attrs(styles.personButton)}
-                      onclick={() => (selectedId = contact.id)}
-                      ><Avatar person={contact.data} size={39} /><span
-                        ><strong {...stylex.attrs(styles.personName)}
-                          >{Contact.name(contact.data)}{#if contact.favorite}<Star
-                              size={10}
-                              fill="currentColor"
-                            />{/if}</strong
-                        ><small {...stylex.attrs(styles.personPhone)}
-                          >{contact.data.phone || 'Contact card'}</small
-                        ></span
-                      ></button
-                    ></td
-                  ><td {...stylex.attrs(styles.td, styles.emailCell)}
-                    ><a
-                      {...stylex.attrs(styles.tableEmail)}
-                      href={contact.data.email ? `mailto:${contact.data.email}` : undefined}
-                      >{contact.data.email || 'Not shared'}</a
-                    ></td
-                  ><td {...stylex.attrs(styles.td, styles.locationCell)}
-                    ><span {...stylex.attrs(styles.location)}
-                      >{contact.data.city || 'Not shared'}{#if contact.data.region}<span
-                          {...stylex.attrs(styles.locationRegion)}>, {contact.data.region}</span
-                        >{/if}</span
-                    ></td
-                  ><td {...stylex.attrs(styles.td, styles.lastCell)}
-                    ><button
-                      {...stylex.attrs(ui.iconButton)}
-                      onclick={() => (selectedId = contact.id)}
-                      aria-label="Open {Contact.name(contact.data)}’s card"
-                      ><ChevronRight size={16} /></button
-                    ></td
-                  ></tr
-                >{/each}</tbody
-            >
-          </table>
-        </div>{:else}<div {...stylex.attrs(ui.emptyState)}>
-          <span {...stylex.attrs(ui.emptyIcon)}><Users size={24} /></span>
-          <h3>{search || filter !== 'all' ? 'No people found' : 'Your people belong here'}</h3>
-          <p {...stylex.attrs(ui.emptyText)}>
-            {search || filter !== 'all'
-              ? 'Try another search or switch to all people.'
-              : 'Send your first invitation. Your friend’s contact card will appear here when they fill it in.'}
-          </p>
-          {#if !search && filter === 'all'}<button
-              {...stylex.attrs(ui.button, ui.primary)}
-              onclick={() => (inviteOpen = true)}><Plus size={15} />Invite a friend</button
-            >{/if}
-        </div>{/if}
-      <div {...stylex.attrs(styles.tableFooter)}>
-        <span
-          >{filtered.length}
-          {filtered.length === 1 ? 'person' : 'people'}{filter !== 'all' || search
-            ? ` of ${book.contacts.length}`
-            : ' in your circle'}</span
-        ><span {...stylex.attrs(styles.footerNote)}
-          >Collected with a little help from your friends <span {...stylex.attrs(styles.tinyHeart)}
-            >♡</span
-          ></span
-        >
-      </div>
-    </div>
-    <div {...stylex.attrs(styles.googleNudge)}>
-      <span {...stylex.attrs(styles.googleIcon)}>G</span>
-      <div {...stylex.attrs(styles.nudgeText)}>
-        <strong {...stylex.attrs(styles.nudgeTitle)}>Keep your phone in the loop.</strong>
-        <p {...stylex.attrs(styles.nudgeDescription)}>
-          Add your people to Google Contacts, or download a vCard for any address book.
-        </p>
-      </div>
-      <a {...stylex.attrs(styles.nudgeLink)} href="/google" aria-label="Set up Google Contacts"
-        ><ArrowUpRight size={19} /></a
-      >
-    </div>
-  </section>
-  <div {...stylex.attrs(styles.rightRail)}>
-    <section {...stylex.attrs(styles.birthdayPanel, ui.panel)}>
-      <div {...stylex.attrs(styles.railHeading)}>
-        <span {...stylex.attrs(styles.cakeIcon)}><Cake size={19} strokeWidth={1.5} /></span>
-        <h3 {...stylex.attrs(styles.railTitle)}>Coming up</h3>
-      </div>
-      <p {...stylex.attrs(styles.railDescription)}>A good reason to say hello.</p>
-      {#if upcoming.length}<div {...stylex.attrs(styles.birthdayList)}>
-          {#each upcoming as contact}<button
-              {...stylex.attrs(styles.birthdayPerson)}
-              onclick={() => (selectedId = contact.id)}
-              ><Avatar person={contact.data} size={34} /><span
-                {...stylex.attrs(styles.birthdayInfo)}
-                ><strong {...stylex.attrs(styles.birthdayName)}
-                  >{contact.data.firstName}'s birthday</strong
-                ><small {...stylex.attrs(styles.birthdayDate)}
-                  >{Contact.birthdayLabel(contact.data.birthday)}</small
-                ></span
-              ><span {...stylex.attrs(styles.daysUntil)}
-                >{Contact.daysUntilBirthday(contact.data.birthday) === 0
-                  ? 'Today'
-                  : `${Contact.daysUntilBirthday(contact.data.birthday)}d`}</span
-              ></button
-            >{/each}
-        </div>{:else}<p {...stylex.attrs(styles.railEmpty)}>
-          Birthdays will appear here when your friends share them.
-        </p>{/if}
-      <div {...stylex.attrs(styles.birthdayNote)}>
-        <span {...stylex.attrs(styles.birthdaySpark)}>✳</span> The little dates are the big ones.
-      </div>
-    </section>
-    <section {...stylex.attrs(styles.invitationNote)}>
-      <span {...stylex.attrs(styles.linkSymbol)}><Link size={18} /></span>
-      <h3 {...stylex.attrs(styles.invitationTitle)}>
-        {pending ? `${pending} invitations out in the world` : 'Your next hello starts here'}
-      </h3>
-      <p {...stylex.attrs(styles.invitationText)}>
-        {pending
-          ? 'A few more familiar faces could be joining your address book soon.'
-          : 'Make a private link and send it to someone you’d like to stay close to.'}
+
+{#if !book.contacts.length}
+  <section {...stylex.attrs(ui.panel, styles.start)} aria-labelledby="start-title">
+    {#if openInvitations}
+      <span {...stylex.attrs(ui.emptyIcon)}><Hourglass size={24} /></span>
+      <h2 id="start-title">Waiting for replies</h2>
+      <p {...stylex.attrs(ui.emptyText)}>
+        You have {openInvitations === 1
+          ? 'one open invitation'
+          : `${openInvitations} open invitations`}. People appear here as soon as they add their
+        details.
       </p>
-      <a {...stylex.attrs(styles.invitationLink)} href="/invitations"
-        >View invitations <ArrowUpRight size={14} /></a
-      >
-      <div {...stylex.attrs(styles.noteCircles)}>
-        <span {...stylex.attrs(styles.noteCircle)}>A</span><span
-          {...stylex.attrs(styles.noteCircle)}>J</span
-        ><span {...stylex.attrs(styles.noteCircle)}>+</span><span
-          {...stylex.attrs(styles.noteCircle, styles.dottedCircle)}
-        ></span>
+      <div {...stylex.attrs(styles.startActions)}>
+        <button {...stylex.attrs(ui.button, ui.primary)} onclick={() => (inviteOpen = true)}
+          ><Plus size={17} />Invite someone</button
+        ><a {...stylex.attrs(ui.button)} href="/invitations">See invitations</a>
       </div>
-    </section>
+    {:else}
+      <ContactStack width={220} />
+      <h2 id="start-title">Start your address book</h2>
+      <p {...stylex.attrs(ui.emptyText)}>
+        Send someone a private link. They fill in their own contact details, and they show up here.
+      </p>
+      <button {...stylex.attrs(ui.button, ui.primary)} onclick={() => (inviteOpen = true)}
+        ><Plus size={17} />Invite someone</button
+      >
+    {/if}
+  </section>
+{:else}
+  {#if upcoming.length}<section {...stylex.attrs(styles.birthdays)} aria-labelledby="birthdays">
+      <h2 id="birthdays" {...stylex.attrs(styles.birthdaysTitle)}>
+        <Cake size={16} />Birthdays soon
+      </h2>
+      <ul {...stylex.attrs(styles.birthdayList)}>
+        {#each upcoming as { contact, days } (contact.id)}<li>
+            <button {...stylex.attrs(styles.birthday)} onclick={() => (selectedId = contact.id)}
+              ><Avatar person={contact.data} size={28} /><span
+                >{contact.data.firstName}
+                <span {...stylex.attrs(ui.muted)}>{when(days, contact.data.birthday)}</span></span
+              ></button
+            >
+          </li>{/each}
+      </ul>
+    </section>{/if}
+
+  <div {...stylex.attrs(styles.toolbar)}>
+    <label {...stylex.attrs(styles.searchBox)}
+      ><Search size={17} /><span {...stylex.attrs(ui.srOnly)}>Search people</span><input
+        {...stylex.attrs(styles.searchInput)}
+        type="search"
+        placeholder="Search"
+        bind:value={search}
+      /></label
+    >
+    {#if views.length > 1}<div {...stylex.attrs(ui.segmented)} role="group" aria-label="Show">
+        {#each views as option (option.id)}<button
+            {...stylex.attrs(ui.segment, activeView === option.id && ui.segmentOn)}
+            aria-pressed={activeView === option.id}
+            onclick={() => (view = option.id)}>{option.label}</button
+          >{/each}
+      </div>{/if}
+    {#if book.contacts.length > 1}<label {...stylex.attrs(styles.sort)}
+        ><span {...stylex.attrs(ui.srOnly)}>Sort by</span><select
+          {...stylex.attrs(styles.sortSelect)}
+          bind:value={sort}
+          ><option value="name">Name</option><option value="recent">Newest</option></select
+        ></label
+      >{/if}
   </div>
-</div>
-{#if inviteOpen}<InviteDialog slug={book.profile.slug} onclose={() => (inviteOpen = false)} />{/if}
+
+  <section {...stylex.attrs(ui.panel)} aria-label="Contacts">
+    {#if filtered.length}<ul {...stylex.attrs(styles.list)}>
+        {#each filtered as contact (contact.id)}<li {...stylex.attrs(styles.item)}>
+            <button {...stylex.attrs(styles.row)} onclick={() => (selectedId = contact.id)}
+              ><Avatar person={contact.data} size={40} /><span {...stylex.attrs(styles.who)}
+                ><span {...stylex.attrs(styles.name)}
+                  >{Contact.name(contact.data)}{#if contact.favorite}<span
+                      {...stylex.attrs(styles.favorite)}
+                      ><Star size={13} fill="currentColor" /><span {...stylex.attrs(ui.srOnly)}
+                        >Favorite</span
+                      ></span
+                    >{/if}</span
+                ><span {...stylex.attrs(styles.secondary)}
+                  >{contact.data.email || contact.data.phone}</span
+                ></span
+              >{#if contact.data.city}<span {...stylex.attrs(styles.place)}
+                  >{contact.data.city}</span
+                >{/if}</button
+            >
+          </li>{/each}
+      </ul>{:else}<div {...stylex.attrs(ui.emptyState)}>
+        <h2>No matches{search.trim() ? ` for “${search.trim()}”` : ''}</h2>
+        <p {...stylex.attrs(ui.emptyText)}>Try a different name, email, or city.</p>
+        <button
+          {...stylex.attrs(ui.textButton)}
+          onclick={() => {
+            search = '';
+            view = 'all';
+          }}>Show everyone</button
+        >
+      </div>{/if}
+  </section>
+  {#if openInvitations}<p {...stylex.attrs(styles.footnote)}>
+      {openInvitations === 1 ? 'One invitation is' : `${openInvitations} invitations are`} still open.
+      <a href="/invitations">See invitations</a>
+    </p>{/if}
+{/if}
+{#if inviteOpen}<InviteDialog onclose={() => (inviteOpen = false)} />{/if}
 {#if selected}<ContactDetail contact={selected} onclose={() => (selectedId = null)} />{/if}

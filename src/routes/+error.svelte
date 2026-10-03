@@ -6,13 +6,20 @@
   import Brand from '#lib/components/Brand.svelte';
 </script>
 
+<svelte:head
+  ><title
+    >{page.status === 404 ? 'Page not found' : 'Something went wrong'} | Contacts Exchange</title
+  ></svelte:head
+>
 <div {...stylex.attrs(styles.shell)}>
   <header {...stylex.attrs(styles.header)}><Brand /></header>
   <main {...stylex.attrs(styles.content, styles.card, styles.closed)}>
-    <h1>{page.status === 404 ? 'This page isn’t here.' : 'We couldn’t open this page.'}</h1>
+    <h1 {...stylex.attrs(styles.title)}>
+      {page.status === 404 ? 'Page not found' : 'Something went wrong'}
+    </h1>
     <p {...stylex.attrs(styles.closedText)}>
-      {page.error?.message || 'Check the link and try again. Your saved contacts are unchanged.'}
+      {page.error?.message || 'Check the link and try again. Your contacts are safe.'}
     </p>
-    <a {...stylex.attrs(ui.button, ui.primary)} href="/">Back to Contacts Exchange</a>
+    <a {...stylex.attrs(ui.button, ui.primary)} href="/">Go to Contacts Exchange</a>
   </main>
 </div>

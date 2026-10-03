@@ -1,14 +1,47 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
-  container: { maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 24 },
-  section: { padding: { default: 28, [media.mobile]: 22 } },
-  sectionTitle: { fontSize: 20, marginBottom: 12 },
-  description: { fontSize: 13, color: tokens.muted, lineHeight: 1.8, marginBottom: 20 },
-  row: { display: 'flex', gap: 14, alignItems: 'center', marginBottom: 20 },
-  contactName: { fontWeight: 500, fontSize: 15 },
-  email: { fontSize: 12, color: tokens.muted, marginTop: 4 },
-  actions: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
-  claim: { backgroundColor: tokens.blueSoft, borderRadius: 12, padding: 24 },
-  note: { color: tokens.muted, fontSize: 11, marginTop: 17 }
+  stack: { maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 20 },
+  section: { padding: { default: 28, [media.mobile]: 20 } },
+  title: { marginBottom: 6 },
+  text: { color: tokens.muted, marginBottom: 18 },
+  fine: { fontSize: 13, color: tokens.muted, marginTop: 12 },
+  claim: { backgroundColor: tokens.blueSoft, borderRadius: 13, padding: 24 },
+  address: {
+    display: 'flex',
+    alignItems: 'center',
+    marginTop: 7,
+    paddingRight: 13,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: '#dfe3eb',
+    borderRadius: 8,
+    backgroundColor: tokens.paper,
+    outline: { default: 'none', ':focus-within': '3px solid #7b97ee' },
+    outlineOffset: 3
+  },
+  slugInput: {
+    flexGrow: 1,
+    minWidth: 60,
+    minHeight: 44,
+    paddingBlock: 11,
+    paddingLeft: 13,
+    paddingRight: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    color: tokens.ink,
+    outline: 'none'
+  },
+  suffix: { color: tokens.muted, fontWeight: 400, whiteSpace: 'nowrap' },
+  formFooter: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    flexWrap: 'wrap'
+  },
+  share: { display: 'flex', alignItems: 'center', gap: 18, fontSize: 14 },
+  copy: { display: 'inline-flex', alignItems: 'center', gap: 6 },
+  card: { display: 'flex', gap: 14, alignItems: 'center', marginBottom: 18 },
+  cardName: { fontWeight: 500 }
 });

@@ -1,4 +1,14 @@
-<svg width="310" height="170" viewBox="0 0 330 180" fill="none" aria-hidden="true">
+<script lang="ts">
+  let { width = 310 }: { width?: number } = $props();
+</script>
+
+<svg
+  {width}
+  height={Math.round((width * 180) / 330)}
+  viewBox="0 0 330 180"
+  fill="none"
+  aria-hidden="true"
+>
   <path
     d="M20 121c22-35 57-20 47-5-12 16-37-2-16-28 15-17 32-16 48-22"
     stroke="#a8b7e6"

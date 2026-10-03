@@ -1,42 +1,48 @@
 import * as stylex from '@stylexjs/stylex';
-import { tokens } from '../tokens.stylex';
+import { tokens, media } from '../tokens.stylex';
 export const styles = stylex.create({
-  personHeader: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 10,
-    paddingTop: 5,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: tokens.line
-  },
-  favoriteButton: {
+  top: { display: 'flex', alignItems: 'center', gap: 16 },
+  topText: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 },
+  favorite: {
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#faf7ee',
-    borderWidth: 0,
-    borderRadius: 5,
     paddingBlock: 5,
     paddingInline: 10,
-    color: '#917635',
-    fontSize: 11
+    borderRadius: 999,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: tokens.line,
+    backgroundColor: { default: tokens.paper, [media.hover]: { ':hover': tokens.surface } },
+    color: tokens.muted,
+    fontSize: 13,
+    fontWeight: 500
   },
-  details: { paddingBlock: 24, display: 'flex', flexDirection: 'column', gap: 20 },
-  detailRow: { display: 'flex', gap: 14, alignItems: 'flex-start', fontSize: 13 },
-  detailText: { minWidth: 0, overflowWrap: 'anywhere' },
-  detailLabel: { display: 'block', fontSize: 11, color: tokens.muted, marginBottom: 4 },
-  notes: { whiteSpace: 'pre-line' },
-  detailActions: {
+  favoriteOn: { color: '#8a6a1f', borderColor: '#efe1bb', backgroundColor: '#fbf5e6' },
+  details: { marginBlock: 24, display: 'flex', flexDirection: 'column', gap: 14 },
+  row: {
+    display: 'grid',
+    gridTemplateColumns: { default: '96px minmax(0,1fr)', [media.mobile]: '1fr' },
+    gap: { default: 12, [media.mobile]: 2 }
+  },
+  term: { color: tokens.muted, fontSize: 14 },
+  value: { margin: 0, overflowWrap: 'anywhere' },
+  lines: { whiteSpace: 'pre-line' },
+  actions: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
+  footer: {
+    justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopStyle: 'solid',
     borderTopColor: tokens.line,
-    paddingTop: 20,
-    display: 'flex',
-    justifyContent: 'space-between'
+    paddingTop: 20
   },
-  removeConfirm: { backgroundColor: '#fff5f5', padding: 15, borderRadius: 8, fontSize: 12 },
-  confirmActions: { display: 'flex', gap: 10, marginTop: 15 }
+  remove: { color: '#ad3e4e' },
+  confirm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+    backgroundColor: '#fff5f5',
+    padding: 16,
+    borderRadius: 10
+  }
 });

@@ -1,5 +1,13 @@
 import { PUBLIC_CONTACTS_DOMAIN } from '$app/env/public';
 
+export function invitationUrl(token: string, origin: string) {
+  const url = new URL(origin);
+  if (url.hostname.endsWith(`.${PUBLIC_CONTACTS_DOMAIN}`)) {
+    url.hostname = PUBLIC_CONTACTS_DOMAIN;
+  }
+  return `${url.origin}/i/${token}`;
+}
+
 export function contactPageUrl(slug: string, origin: string) {
   const url = new URL(origin);
   if (
