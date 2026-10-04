@@ -4,6 +4,7 @@
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from '#lib/components/PublicShell.stylex.ts';
   import Brand from '#lib/components/Brand.svelte';
+  import Footer from '#lib/components/Footer.svelte';
 </script>
 
 <svelte:head
@@ -13,15 +14,18 @@
 >
 <div {...stylex.attrs(styles.shell)}>
   <header {...stylex.attrs(styles.header)}><Brand href={page.data.appUrl || '/'} /></header>
-  <main {...stylex.attrs(styles.content, styles.card, styles.closed)}>
-    <h1 {...stylex.attrs(styles.title)}>
-      {page.status === 404 ? 'Page not found' : 'Something went wrong'}
-    </h1>
-    <p {...stylex.attrs(styles.closedText)}>
-      {page.error?.message || 'Check the link and try again. Your contacts are safe.'}
-    </p>
-    <a {...stylex.attrs(ui.button, ui.primary)} href="{page.data.appUrl ?? ''}/"
-      >Go to Contacts Exchange</a
-    >
+  <main {...stylex.attrs(styles.content)}>
+    <div {...stylex.attrs(styles.card, styles.closed)}>
+      <h1 {...stylex.attrs(styles.title)}>
+        {page.status === 404 ? 'Page not found' : 'Something went wrong'}
+      </h1>
+      <p {...stylex.attrs(styles.closedText)}>
+        {page.error?.message || 'Check the link and try again. Your contacts are safe.'}
+      </p>
+      <a {...stylex.attrs(ui.button, ui.primary)} href="{page.data.appUrl ?? ''}/"
+        >Go to Contacts Exchange</a
+      >
+    </div>
   </main>
+  <Footer />
 </div>

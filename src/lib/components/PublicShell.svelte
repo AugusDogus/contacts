@@ -4,6 +4,7 @@
   import * as stylex from '@stylexjs/stylex';
   import { styles } from './PublicShell.stylex.ts';
   import Brand from './Brand.svelte';
+  import Footer from './Footer.svelte';
   let {
     name,
     title,
@@ -21,8 +22,6 @@
       {#if message}<p {...stylex.attrs(styles.message)}>{message}</p>{/if}
     </div>
     <div {...stylex.attrs(styles.card)}>{@render children()}</div>
-    <p {...stylex.attrs(styles.footer)}>
-      <a href="{page.data.appUrl || ''}/privacy">Privacy</a>
-    </p>
   </main>
+  <Footer />
 </div>

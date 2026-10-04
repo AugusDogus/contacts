@@ -175,7 +175,6 @@
           <a {...stylex.attrs(ui.button, ui.small, ui.primary)} href="/login">Create account</a
           >{/if}
       </div>
-      <p {...stylex.attrs(styles.fine)}><a href="/privacy">Privacy policy</a></p>
     </div>
   </section>
 </div>

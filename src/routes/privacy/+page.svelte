@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as stylex from '@stylexjs/stylex';
   import Brand from '#lib/components/Brand.svelte';
+  import Footer from '#lib/components/Footer.svelte';
   import { styles } from '#lib/public-info.stylex.ts';
 </script>
 
@@ -98,10 +99,5 @@
       <p>Changes to this policy will appear on this page with an updated date.</p>
     </section>
   </main>
-  <footer {...stylex.attrs(styles.footer)}>
-    <a {...stylex.attrs(styles.link)} href="/about">About Contacts Exchange</a><a
-      {...stylex.attrs(styles.link)}
-      href="/login">Sign in</a
-    >
-  </footer>
+  <Footer />
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as stylex from '@stylexjs/stylex';
   import Brand from '#lib/components/Brand.svelte';
+  import Footer from '#lib/components/Footer.svelte';
   import { styles } from '#lib/public-info.stylex.ts';
   import { ui } from '#lib/ui.stylex.ts';
 </script>
@@ -37,10 +38,5 @@
       <a {...stylex.attrs(ui.button, ui.primary)} href="/login">Create your address book</a>
     </div>
   </main>
-  <footer {...stylex.attrs(styles.footer)}>
-    <a {...stylex.attrs(styles.link)} href="/privacy">Privacy</a><a
-      {...stylex.attrs(styles.link)}
-      href="mailto:augie@contacts.exchange">Contact</a
-    >
-  </footer>
+  <Footer />
 </div>

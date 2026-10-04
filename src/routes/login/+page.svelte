@@ -4,6 +4,7 @@
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './login.stylex.ts';
   import Brand from '#lib/components/Brand.svelte';
+  import Footer from '#lib/components/Footer.svelte';
   import ContactStack from '#lib/components/ContactStack.svelte';
   import { authClient } from '#lib/auth-client.ts';
   import type { PageProps } from './$types';
@@ -127,6 +128,6 @@
         }}>{mode === 'signup' ? 'Sign in' : 'Create an account'}</button
       >
     </p>
-    <p {...stylex.attrs(styles.privacy)}><a href="/privacy">Privacy</a></p>
   </main>
+  <Footer />
 </div>

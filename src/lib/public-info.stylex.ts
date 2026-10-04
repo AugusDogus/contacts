@@ -19,14 +19,5 @@ export const styles = stylex.create({
   },
   content: { display: 'grid', gap: 24, lineHeight: 1.7 },
   section: { display: 'grid', gap: 8 },
-  footer: {
-    marginTop: 40,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopStyle: 'solid',
-    borderTopColor: tokens.line,
-    display: 'flex',
-    gap: 24
-  },
   link: { color: tokens.blue, textDecoration: 'underline', textUnderlineOffset: 3 }
 });

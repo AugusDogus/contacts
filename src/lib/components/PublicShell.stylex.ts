@@ -5,16 +5,18 @@ export const styles = stylex.create({
     minHeight: '100dvh',
     paddingTop: { default: 24, [media.mobile]: 16 },
     paddingInline: { default: 24, [media.mobile]: 12 },
-    paddingBottom: 40,
-    backgroundColor: tokens.surface
+    backgroundColor: tokens.surface,
+    display: 'flex',
+    flexDirection: 'column'
   },
   header: {
+    width: '100%',
     maxWidth: 880,
     marginInline: 'auto',
     marginBottom: { default: 40, [media.mobile]: 28 },
     paddingInline: { default: 0, [media.mobile]: 4 }
   },
-  content: { width: '100%', maxWidth: 560, marginInline: 'auto' },
+  content: { width: '100%', maxWidth: 560, marginInline: 'auto', flexGrow: 1 },
   intro: { textAlign: 'center', marginBottom: 24, paddingInline: 8 },
   avatar: {
     display: 'grid',
@@ -49,7 +51,6 @@ export const styles = stylex.create({
     padding: { default: 28, [media.mobile]: 18 },
     boxShadow: '0 1px 2px #1e23300a'
   },
-  footer: { marginTop: 16, textAlign: 'center', fontSize: 13, color: tokens.muted },
   closed: {
     paddingBlock: 8,
     textAlign: 'center',

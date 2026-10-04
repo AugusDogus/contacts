@@ -1,6 +1,8 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
+  frame: { minHeight: '100dvh', display: 'flex', flexDirection: 'column' },
+  footer: { paddingInline: { default: 24, [media.mobile]: 16 } },
   header: {
     position: 'sticky',
     top: 0,
@@ -25,15 +27,14 @@ export const styles = stylex.create({
     placeItems: 'center',
     width: 34,
     height: 34,
-    marginLeft: 'auto',
     marginRight: -8,
     borderRadius: 8,
     color: { default: tokens.muted, [media.hover]: { ':hover': tokens.ink } },
     backgroundColor: { default: 'transparent', [media.hover]: { ':hover': tokens.hover } }
   },
   current: { color: tokens.ink, backgroundColor: tokens.hover },
+  end: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 },
   demo: {
-    marginLeft: 'auto',
     fontSize: 13,
     fontWeight: 500,
     color: tokens.blue,
@@ -49,7 +50,7 @@ export const styles = stylex.create({
     marginInline: 'auto',
     paddingTop: { default: 36, [media.mobile]: 20 },
     paddingInline: { default: 24, [media.mobile]: 16 },
-    paddingBottom: 64
+    flexGrow: 1
   },
   skipLink: {
     position: 'fixed',
