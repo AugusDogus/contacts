@@ -33,7 +33,7 @@ describe('private invitations', () => {
     const { book } = await setup();
     const profile = await book.ensureProfile('new-owner', 'Taylor Morgan');
     expect(profile.name).toBe('Taylor');
-    expect(profile.slug).toMatch(/^taylor-[a-f0-9]{8}$/);
+    expect(profile.slug).toBe('taylor');
     expect((await book.publicProfile(profile.slug))?.name).toBe('Taylor');
     await book.saveProfile(profile.ownerId, {
       name: 'My chosen name',
@@ -43,6 +43,17 @@ describe('private invitations', () => {
     expect((await book.ensureProfile(profile.ownerId, 'Taylor Morgan')).name).toBe(
       'My chosen name'
     );
+  });
+  test('starts with the first name as the page address, numbering only when it is taken', async () => {
+    const { book } = await setup();
+    // setup() already created "augie" for the owner.
+    expect((await book.ensureProfile('second-augie', 'Augie Doe')).slug).toBe('augie2');
+    expect((await book.ensureProfile('third-augie', 'augie')).slug).toBe('augie3');
+    expect((await book.ensureProfile('jose', 'José Núñez')).slug).toBe('jose');
+    expect((await book.ensureProfile('admin', 'Admin')).slug).toBe('admin2');
+    expect((await book.ensureProfile('al', 'Al')).slug).toBe('al2');
+    expect((await book.ensureProfile('emoji', '🙂')).slug).toBe('friend');
+    expect((await book.ensureProfile('second-augie', 'Someone Else')).slug).toBe('augie2');
   });
   test('creates short tokens containing the searchable invitation reference', async () => {
     const { invite } = await setup();

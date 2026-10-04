@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, desc, eq, exists, gt, isNull, ne, sql } from 'drizzle-orm';
+import { and, desc, eq, exists, gt, isNull, like, ne, sql } from 'drizzle-orm';
 import { contactInput, type ContactInput } from '../contact';
 import { InvitationToken } from './invitation-token';
 import { invitationReference } from '../invitation-token';
@@ -25,6 +25,14 @@ const reservedSlugs = new Set([
   'contacts'
 ]);
 
+const pageName = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
+/** The first name alone, then numbered from 2, skipping reserved and too-short names. */
+function pageNames(base: string) {
+  return [base, ...Array.from({ length: 998 }, (_, index) => `${base}${index + 2}`)].filter(
+    (candidate) => pageName.test(candidate) && !reservedSlugs.has(candidate)
+  );
+}
+
 export function addressBook(db: AppDatabase) {
   async function profile(ownerId: string) {
     return (await db.query.profiles.findFirst({ where: eq(profiles.ownerId, ownerId) })) ?? null;
@@ -39,25 +47,34 @@ export function addressBook(db: AppDatabase) {
     const publicName = name.trim().split(/\s+/)[0] || 'Friend';
     const base =
       publicName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        .slice(0, 24) || 'friend';
-    await db
-      .insert(profiles)
-      .values({
-        ownerId,
-        slug: `${base}-${randomBytes(4).toString('hex')}`,
-        name: publicName,
-        createdAt: Date.now()
-      })
-      .onConflictDoNothing({ target: profiles.ownerId });
-    const created = await profile(ownerId);
-    if (!created)
-      throw new Error(
-        'Profile creation did not return a profile. Check the database connection and retry.'
+        .slice(0, 24)
+        .replace(/^-+|-+$/g, '') || 'friend';
+    // A UNIQUE slug arbitrates simultaneous signups; retry with the next free name.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const taken = new Set(
+        (
+          await db
+            .select({ slug: profiles.slug })
+            .from(profiles)
+            .where(like(profiles.slug, `${base}%`))
+        ).map(({ slug }) => slug)
       );
-    return created;
+      const slug = pageNames(base).find((candidate) => !taken.has(candidate));
+      if (!slug) break;
+      await db
+        .insert(profiles)
+        .values({ ownerId, slug, name: publicName, createdAt: Date.now() })
+        .onConflictDoNothing();
+      const created = await profile(ownerId);
+      if (created) return created;
+    }
+    throw new Error(
+      `Could not reserve a page address starting with "${base}" after five attempts. Retry signing in.`
+    );
   }
   async function listContacts(ownerId: string) {
     const rows = await db
