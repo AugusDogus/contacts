@@ -72,9 +72,10 @@
       >
     </section>{/if}
 
-  <section aria-labelledby="page-title">
+  <section {...stylex.attrs(styles.section)} aria-labelledby="page-title">
     <div {...stylex.attrs(styles.sectionHead)}>
       <h2 id="page-title" {...stylex.attrs(styles.title)}>What friends see</h2>
+      <p {...stylex.attrs(styles.hint)}>Your name and note on every invitation.</p>
     </div>
     <form
       method="POST"
@@ -126,16 +127,18 @@
     </form>
   </section>
 
-  <section id="form" aria-labelledby="form-title">
+  <section {...stylex.attrs(styles.section)} id="form" aria-labelledby="form-title">
     <div {...stylex.attrs(styles.sectionHead)}>
       <h2 id="form-title" {...stylex.attrs(styles.title)}>What friends fill in</h2>
+      <p {...stylex.attrs(styles.hint)}>Changes apply to links you already sent.</p>
     </div>
     {#key book.profile.form}<FormFieldsEditor config={book.profile.form} />{/key}
   </section>
 
-  <section aria-labelledby="card-title">
+  <section {...stylex.attrs(styles.section)} aria-labelledby="card-title">
     <div {...stylex.attrs(styles.sectionHead)}>
       <h2 id="card-title" {...stylex.attrs(styles.title)}>Your card</h2>
+      <p {...stylex.attrs(styles.hint)}>Fills in invitations other people send you.</p>
     </div>
     <div {...stylex.attrs(ui.panel, styles.row)}>
       {#if book.savedCard}<Avatar person={book.savedCard} size={36} />
@@ -144,9 +147,7 @@
           <p {...stylex.attrs(styles.rowDetail)}>
             {book.savedCard.email || book.savedCard.phone}
           </p>
-        </div>{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>
-          Prefills invitations you receive
-        </p>{/if}
+        </div>{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>No card yet</p>{/if}
       {#if book.viewer.kind === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
           >Sign up</a
         >{:else}<button {...stylex.attrs(ui.button, ui.small)} onclick={() => (editing = true)}
@@ -155,24 +156,27 @@
     </div>
   </section>
 
-  <section aria-labelledby="account-title">
+  <section {...stylex.attrs(styles.section)} aria-labelledby="account-title">
     <div {...stylex.attrs(styles.sectionHead)}>
       <h2 id="account-title" {...stylex.attrs(styles.title)}>Account</h2>
     </div>
-    <div {...stylex.attrs(ui.panel, styles.row)}>
-      {#if book.viewer.kind === 'account'}<p {...stylex.attrs(styles.rowText)}>
-          {book.viewer.email}
-        </p>
-        <button
-          {...stylex.attrs(ui.button, ui.small)}
-          onclick={async () => {
-            await authClient.signOut();
-            window.location.href = '/login';
-          }}>Sign out</button
-        >{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>Viewing sample data</p>
-        <a {...stylex.attrs(ui.button, ui.small, ui.primary)} href="/login">Create account</a>{/if}
+    <div>
+      <div {...stylex.attrs(ui.panel, styles.row)}>
+        {#if book.viewer.kind === 'account'}<p {...stylex.attrs(styles.rowText)}>
+            {book.viewer.email}
+          </p>
+          <button
+            {...stylex.attrs(ui.button, ui.small)}
+            onclick={async () => {
+              await authClient.signOut();
+              window.location.href = '/login';
+            }}>Sign out</button
+          >{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>Viewing sample data</p>
+          <a {...stylex.attrs(ui.button, ui.small, ui.primary)} href="/login">Create account</a
+          >{/if}
+      </div>
+      <p {...stylex.attrs(styles.fine)}><a href="/privacy">Privacy policy</a></p>
     </div>
-    <p {...stylex.attrs(styles.fine)}><a href="/privacy">Privacy policy</a></p>
   </section>
 </div>
 {#if editing}<Modal title="Your card" wide onclose={() => (editing = false)}

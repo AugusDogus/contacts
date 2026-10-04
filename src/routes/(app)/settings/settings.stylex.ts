@@ -1,15 +1,22 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
-  stack: { maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 32 },
-  sectionHead: {
-    display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 10
+  stack: { display: 'flex', flexDirection: 'column', gap: { default: 0, [media.tablet]: 28 } },
+  // Labels on the left and controls on the right; one column on narrow screens.
+  section: {
+    display: 'grid',
+    gridTemplateColumns: { default: '220px minmax(0, 1fr)', [media.tablet]: 'minmax(0, 1fr)' },
+    columnGap: 40,
+    rowGap: 10,
+    alignItems: 'start',
+    paddingBlock: { default: 28, [media.tablet]: 0 },
+    borderTopWidth: { default: 1, ':first-child': 0, [media.tablet]: 0 },
+    borderTopStyle: 'solid',
+    borderTopColor: tokens.line
   },
-  title: { fontFamily: tokens.font, fontSize: 14, fontWeight: 600, letterSpacing: 0 },
+  sectionHead: { paddingTop: { default: 4, [media.tablet]: 0 } },
+  title: { fontFamily: tokens.font, fontSize: 15, fontWeight: 600, letterSpacing: 0 },
+  hint: { fontSize: 13, color: tokens.muted, marginTop: 2 },
   body: { padding: { default: 18, [media.mobile]: 14 }, overflow: 'visible' },
   row: {
     display: 'flex',
@@ -23,6 +30,7 @@ export const styles = stylex.create({
   rowDetail: { fontSize: 13, color: tokens.muted },
   fine: { fontSize: 13, marginTop: 10 },
   claim: {
+    marginBottom: 24,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
