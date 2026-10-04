@@ -33,14 +33,13 @@
     "zod": "^4.6.5"
   },
   "scripts": {
-    "dev": "bun run db:migrate && vite dev",
+    "dev": "bun run db:push && vite dev",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "bun test",
     "prepare": "svelte-kit sync",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun scripts/migrate.ts",
+    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "lint": "eslint 'src/**/*.stylex.ts'",
     "format": "prettier --write .",

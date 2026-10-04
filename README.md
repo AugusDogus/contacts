@@ -13,7 +13,7 @@ Built with Svelte 5.57, SvelteKit 3 remote functions, StyleX, Better Auth, Drizz
 - Both `contacts.exchange` and `*.contacts.exchange` are verified. The registrar already uses `ns1.vercel-dns.com` and `ns2.vercel-dns.com`.
 - Google Cloud project: [Contacts Exchange](https://console.cloud.google.com/auth/overview?project=curious-scarab-510520-v4), project ID `curious-scarab-510520-v4`. The external OAuth app is named `Contacts Exchange`, and its web client is `Contacts Exchange Web`. Its credentials are stored as sensitive production variables in Vercel. The People API is enabled. The OAuth app is in production, with verified, published branding and `augie@contacts.exchange` as its support email. Google Contacts scope verification is still pending submission.
 
-Production migrations have been applied. Account creation, guest submission on a wildcard subdomain, single-use replay rejection, and vCard export were verified against the deployed app. Temporary test records were removed.
+The production schema is up to date. Account creation, guest submission on a wildcard subdomain, single-use replay rejection, and vCard export were verified against the deployed app. Temporary test records were removed.
 
 ## Local development
 
@@ -23,9 +23,9 @@ cp .env.example .env
 bun run dev
 ```
 
-Open `http://localhost:5173`. Development uses a local libSQL database and automatically runs the checked-in Drizzle migrations. Visiting `/` without signing in opens an isolated demo workspace with sample contacts. Demo access is compiled out of production. Create an email/password account at `/login` to test an empty, real address book.
+Open `http://localhost:5173`. Development uses a local libSQL database and automatically pushes the Drizzle schema to it. Visiting `/` without signing in opens an isolated demo workspace with sample contacts. Demo access is compiled out of production. Create an email/password account at `/login` to test an empty, real address book.
 
-Use `bun run db:generate` after schema changes. `bun run db:migrate` applies migrations to the database configured in your environment. Database files and credentials are ignored by Git.
+There are no migration files yet. `bun run db:push` applies `src/lib/server/schema.ts` directly to the database configured in your environment, and asks before any change that would lose data. Database files and credentials are ignored by Git.
 
 ## What works
 
@@ -57,7 +57,7 @@ Photos are resized to 512 pixels at most, re-encoded as JPEG, and stripped of me
    | `GOOGLE_CLIENT_ID`       | Your Google OAuth client ID, when enabled     |
    | `GOOGLE_CLIENT_SECRET`   | Your Google OAuth client secret, when enabled |
 
-3. Apply `bun run db:migrate` from a trusted environment with the production Turso variables. Migrations are deliberately separate from `build`, so preview builds cannot mutate your production database.
+3. Run `bun run db:push` from a trusted environment with the production Turso variables. Schema changes are deliberately separate from `build`, so preview builds cannot mutate your production database.
 4. Import the repository into Vercel as a SvelteKit project, use `bun install --frozen-lockfile` and `bun run build`, and select Node.js 24. The adapter produces Vercel's Build Output API artifacts.
 5. Add both `contacts.exchange` and `*.contacts.exchange` to the same Vercel project. For Vercel-managed wildcard TLS, move the domain to the Vercel nameservers shown in its domain setup. Preserve existing mail and other DNS records when switching nameservers.
 
