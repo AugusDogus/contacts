@@ -20,23 +20,27 @@
 >
 {#if done}<PublicShell {name} title="Sent to {name}"
     ><div {...stylex.attrs(styles.closed)} role="status">
-      <span {...stylex.attrs(ui.emptyIcon)}><Check size={26} /></span>
-      <p {...stylex.attrs(styles.closedText)}>
-        Your details are in {name}’s address book. You can close this page.
-      </p>
-      <p {...stylex.attrs(styles.closedText)}>
-        Want your own address book? Create an account and keep this card for next time.
-      </p>
-      <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login?claim=1">Create an account</a>
+      <span {...stylex.attrs(ui.emptyIcon)}><Check size={24} /></span>
+      <p {...stylex.attrs(styles.closedText)}>All done. You can close this page.</p>
+      <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login?claim=1"
+        >Save your card for next time</a
+      >
     </div></PublicShell
   >
-{:else if !data.valid}<PublicShell {name} title="This link no longer works"
+{:else if data.state === 'used'}<PublicShell {name} title="Already sent"
     ><div {...stylex.attrs(styles.closed)}>
-      <span {...stylex.attrs(ui.emptyIcon)}><LockKeyhole size={24} /></span>
+      <span {...stylex.attrs(ui.emptyIcon)}><Check size={24} /></span>
       <p {...stylex.attrs(styles.closedText)}>
-        It was already used, revoked, or it expired. If you already sent your details, they’re
-        saved. Otherwise, ask {name} for a new link.
+        Details were already sent to {name} with this link. If that wasn’t you, ask {name} for a new one.
       </p>
+    </div></PublicShell
+  >
+{:else if data.state !== 'open'}<PublicShell
+    {name}
+    title={data.state === 'expired' ? 'This link expired' : 'This link doesn’t work'}
+    ><div {...stylex.attrs(styles.closed)}>
+      <span {...stylex.attrs(ui.emptyIcon)}><LockKeyhole size={22} /></span>
+      <p {...stylex.attrs(styles.closedText)}>Ask {name} for a new one.</p>
     </div></PublicShell
   >
 {:else}<PublicShell {name} title="Share your details with {name}" message={data.profile.message}

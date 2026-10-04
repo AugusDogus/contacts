@@ -4,12 +4,12 @@ export const styles = stylex.create({
   brand: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 9,
+    gap: 8,
     fontFamily: tokens.heading,
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 1,
     fontWeight: 700,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
     whiteSpace: 'nowrap',
     color: tokens.ink,
     textDecoration: 'none'

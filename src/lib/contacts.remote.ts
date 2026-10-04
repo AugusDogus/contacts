@@ -7,7 +7,7 @@ import { requireViewer } from './server/viewer';
 import { contactInput } from './contact';
 import { googleConfigured } from './server/auth';
 import { and, eq } from 'drizzle-orm';
-import { contacts, invitations, savedCards } from './server/schema';
+import { contacts, savedCards } from './server/schema';
 import { claimCookieDomain } from './server/claim-cookie';
 import { normalizePhoto } from './server/photo';
 
@@ -18,23 +18,25 @@ export const getAddressBook = query(async () => {
     book.ensureProfile(viewer.id, viewer.name),
     db.query.savedCards.findFirst({ where: eq(savedCards.userId, viewer.id) }),
     book.contacts(viewer.id),
-    book.invitations(viewer.id)
+    book.openInvitations(viewer.id)
   ]);
   const savedCard = saved ? contactInput.parse(saved.data) : null;
   return { viewer, profile, contacts: people, invitations: links, googleConfigured, savedCard };
 });
 
+const OPEN_LIMIT = 200;
+async function openCount(ownerId: string) {
+  return (await book.openInvitations(ownerId)).filter((item) => item.expiresAt > Date.now()).length;
+}
+
 export const createInvitations = command(
   z.object({ count: z.number().int().min(1).max(20), label: z.string().trim().max(100) }),
   async ({ count, label }) => {
     const viewer = requireViewer();
-    const pending = (await book.invitations(viewer.id)).filter(
-      (item) => item.status === 'pending' && item.expiresAt > Date.now()
-    ).length;
-    if (pending + count > 200)
+    if ((await openCount(viewer.id)) + count > OPEN_LIMIT)
       return {
         ok: false,
-        message: 'You can have 200 open invitations. Revoke unused links before creating more.'
+        message: `You can have ${OPEN_LIMIT} open links. Delete ones you no longer need, then try again.`
       } as const;
     const invitations = await book.createInvitations(viewer.id, count, label);
     await getAddressBook().refresh();
@@ -42,19 +44,37 @@ export const createInvitations = command(
   }
 );
 
-export const revokeInvitation = command(z.string(), async (id) => {
-  await db
-    .update(invitations)
-    .set({ status: 'revoked' })
-    .where(
-      and(
-        eq(invitations.id, id),
-        eq(invitations.ownerId, requireViewer().id),
-        eq(invitations.status, 'pending')
-      )
-    );
+const missingLink = {
+  ok: false,
+  message: 'That link was already used or deleted. Refresh to see your current links.'
+} as const;
+
+export const deleteInvitation = command(z.string(), async (id) => {
+  const deleted = await book.deleteInvitation(requireViewer().id, id);
   await getAddressBook().refresh();
+  return deleted ? ({ ok: true } as const) : missingLink;
 });
+
+export const renewInvitation = command(z.string(), async (id) => {
+  const viewer = requireViewer();
+  if ((await openCount(viewer.id)) >= OPEN_LIMIT)
+    return {
+      ok: false,
+      message: `You can have ${OPEN_LIMIT} open links. Delete ones you no longer need, then try again.`
+    } as const;
+  const renewed = await book.renewInvitation(viewer.id, id);
+  await getAddressBook().refresh();
+  return renewed ? ({ ok: true } as const) : missingLink;
+});
+
+export const renameInvitation = command(
+  z.object({ id: z.string(), label: z.string().trim().max(100) }),
+  async ({ id, label }) => {
+    const renamed = await book.renameInvitation(requireViewer().id, id, label);
+    await getAddressBook().refresh();
+    return renamed ? ({ ok: true } as const) : missingLink;
+  }
+);
 
 export const setFavorite = command(
   z.object({ id: z.string(), favorite: z.boolean() }),

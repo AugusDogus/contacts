@@ -5,69 +5,58 @@ export const styles = stylex.create({
     position: 'sticky',
     top: 0,
     zIndex: 20,
-    backgroundColor: tokens.paper,
+    backgroundColor: '#f7f7f8e6',
+    backdropFilter: 'blur(12px)',
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
     borderBottomColor: tokens.line
   },
   headerInner: {
-    maxWidth: 1040,
+    maxWidth: 880,
     marginInline: 'auto',
-    height: { default: 64, [media.mobile]: 56 },
-    paddingInline: { default: 32, [media.mobile]: 20 },
+    height: { default: 56, [media.mobile]: 52 },
+    paddingInline: { default: 24, [media.mobile]: 16 },
     display: 'flex',
     alignItems: 'center',
-    gap: 40
+    gap: 12
   },
-  nav: {
-    display: 'flex',
-    gap: 4,
-    position: { default: 'static', [media.mobile]: 'fixed' },
-    insetInline: 0,
-    bottom: 0,
-    zIndex: 20,
-    backgroundColor: tokens.paper,
-    borderTopWidth: { default: 0, [media.mobile]: 1 },
-    borderTopStyle: 'solid',
-    borderTopColor: tokens.line,
-    paddingBottom: { default: 0, [media.mobile]: 'env(safe-area-inset-bottom)' },
-    justifyContent: { default: 'flex-start', [media.mobile]: 'space-around' }
+  settings: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 34,
+    height: 34,
+    marginLeft: 'auto',
+    marginRight: -8,
+    borderRadius: 8,
+    color: { default: tokens.muted, [media.hover]: { ':hover': tokens.ink } },
+    backgroundColor: { default: 'transparent', [media.hover]: { ':hover': tokens.hover } }
   },
-  navLink: {
-    display: 'flex',
-    flexDirection: { default: 'row', [media.mobile]: 'column' },
-    alignItems: 'center',
-    gap: { default: 8, [media.mobile]: 3 },
-    paddingBlock: { default: 8, [media.mobile]: 9 },
-    paddingInline: { default: 12, [media.mobile]: 4 },
-    flexGrow: { default: 0, [media.mobile]: 1 },
-    borderRadius: { default: 8, [media.mobile]: 0 },
-    color: tokens.muted,
-    fontSize: { default: 14, [media.mobile]: 11 },
+  current: { color: tokens.ink, backgroundColor: tokens.hover },
+  demo: {
+    marginLeft: 'auto',
+    fontSize: 13,
     fontWeight: 500,
-    backgroundColor: { default: 'transparent', [media.hover]: { ':hover': tokens.surface } }
+    color: tokens.blue,
+    backgroundColor: tokens.blueSoft,
+    paddingBlock: 4,
+    paddingInline: 10,
+    borderRadius: 999,
+    whiteSpace: 'nowrap'
   },
-  navCurrent: {
-    color: { default: tokens.ink, [media.mobile]: tokens.blue },
-    backgroundColor: { default: tokens.surface, [media.mobile]: 'transparent' },
-    fontWeight: 600
-  },
-  demoLabel: { display: { default: 'inline', [media.mobile]: 'none' } },
-  demo: { marginLeft: 'auto', fontSize: 13, color: tokens.muted, whiteSpace: 'nowrap' },
   main: {
     width: '100%',
-    maxWidth: 1040,
+    maxWidth: 880,
     marginInline: 'auto',
-    paddingTop: { default: 40, [media.mobile]: 24 },
-    paddingInline: { default: 32, [media.mobile]: 20 },
-    paddingBottom: { default: 64, [media.mobile]: 96 }
+    paddingTop: { default: 36, [media.mobile]: 20 },
+    paddingInline: { default: 24, [media.mobile]: 16 },
+    paddingBottom: 64
   },
   skipLink: {
     position: 'fixed',
     left: 16,
     top: { default: -100, ':focus': 12 },
     zIndex: 90,
-    backgroundColor: tokens.blue,
+    backgroundColor: tokens.ink,
     color: tokens.paper,
     padding: 10,
     borderRadius: 8

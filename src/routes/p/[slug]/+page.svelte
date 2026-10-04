@@ -15,10 +15,9 @@
 >
 <PublicShell name={data.profile.name} title={data.profile.name} message={data.profile.message}
   ><div {...stylex.attrs(styles.closed)}>
-    <h2>Need to share your details?</h2>
     <p {...stylex.attrs(styles.closedText)}>
-      Ask {data.profile.name} for an invitation link. You can only add your details from a personal link.
+      Ask {data.profile.name} for a personal invitation link.
     </p>
-    <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login">Start your own address book</a>
+    <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login">Start your own</a>
   </div></PublicShell
 >

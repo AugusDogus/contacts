@@ -82,6 +82,8 @@ export const invitations = sqliteTable(
       .notNull()
       .references(() => profiles.ownerId, { onDelete: 'cascade' }),
     tokenHash: text().notNull().unique(),
+    // Kept so owners can copy a link again. Null for links created before this column.
+    token: text(),
     reference: text(),
     label: text().notNull(),
     status: text({ enum: ['pending', 'used', 'revoked'] }).notNull(),

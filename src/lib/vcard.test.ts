@@ -11,6 +11,7 @@ test('exports structured fields and escapes injected vCard properties', () => {
       linkedUserId: null,
       createdAt: 0,
       favorite: false,
+      source: null,
       data: {
         ...Contact.empty(),
         firstName: 'Zoë',
@@ -37,6 +38,7 @@ test('folds UTF-8 without breaking characters and roundtrips long notes', () => 
       linkedUserId: null,
       createdAt: 0,
       favorite: false,
+      source: null,
       data: { ...Contact.empty(), firstName: 'A', lastName: 'B', email: 'a@example.com', notes }
     }
   ]);

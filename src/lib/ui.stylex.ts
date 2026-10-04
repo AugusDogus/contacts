@@ -1,42 +1,52 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from './tokens.stylex';
 
+const enter = stylex.keyframes({
+  from: { opacity: 0, transform: 'translateY(6px)' },
+  to: { opacity: 1, transform: 'none' }
+});
+
 export const ui = stylex.create({
   button: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingBlock: 10,
-    paddingInline: 16,
+    gap: 7,
+    paddingBlock: 8,
+    paddingInline: 14,
     borderRadius: 8,
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: { default: '#dfe3eb', [media.hover]: { ':hover': '#cbd2df' } },
-    backgroundColor: { default: tokens.paper, [media.hover]: { ':hover': '#f8f9fc' } },
+    borderColor: { default: tokens.field, [media.hover]: { ':hover': '#c9cdd5' } },
+    backgroundColor: { default: tokens.paper, [media.hover]: { ':hover': tokens.surface } },
     color: tokens.ink,
     fontSize: 14,
     fontWeight: 600,
-    minHeight: 42,
+    minHeight: 38,
     whiteSpace: 'nowrap',
     cursor: { default: 'pointer', ':disabled': 'not-allowed' },
     opacity: { default: 1, ':disabled': 0.55 },
-    transition: { default: `transform 130ms ${tokens.easeOut}`, [media.reducedMotion]: 'none' },
+    transition: {
+      default: `transform 140ms ${tokens.easeOut}, background-color 150ms ease, border-color 150ms ease`,
+      [media.reducedMotion]: 'background-color 150ms ease'
+    },
     transform: {
       default: 'none',
-      ':active:not(:focus-visible):not(:disabled)': 'scale(.98)',
+      ':active:not(:disabled)': 'scale(.97)',
       [media.reducedMotion]: 'none'
     }
   },
   primary: {
-    backgroundColor: { default: tokens.blue, [media.hover]: { ':hover': '#2c4dcc' } },
+    backgroundColor: { default: tokens.ink, [media.hover]: { ':hover': '#343b4d' } },
     color: tokens.paper,
-    borderColor: tokens.blue,
-    boxShadow: '0 2px 3px #2949bc18'
+    borderColor: { default: tokens.ink, [media.hover]: { ':hover': '#343b4d' } }
   },
-  danger: { color: '#ad3e4e', borderColor: '#f0d9dd' },
-  full: { width: '100%' },
-  small: { paddingBlock: 7, paddingInline: 12, minHeight: 36, fontSize: 13 },
+  danger: {
+    color: tokens.danger,
+    borderColor: { default: '#f0d4d8', [media.hover]: { ':hover': '#e6b9c0' } }
+  },
+  full: { width: '100%', minHeight: 44 },
+  small: { paddingBlock: 5, paddingInline: 10, minHeight: 32, fontSize: 13 },
   iconButton: {
     display: 'inline-flex',
     justifyContent: 'center',
@@ -44,44 +54,57 @@ export const ui = stylex.create({
     width: 34,
     height: 34,
     padding: 0,
-    backgroundColor: { default: 'transparent', [media.hover]: { ':hover': '#f0f2f7' } },
+    backgroundColor: { default: 'transparent', [media.hover]: { ':hover': tokens.hover } },
     color: tokens.muted,
     borderWidth: 0,
-    borderRadius: 7,
+    borderRadius: 8,
     cursor: 'pointer',
-    flexShrink: 0
+    flexShrink: 0,
+    transition: { default: `transform 140ms ${tokens.easeOut}`, [media.reducedMotion]: 'none' },
+    transform: { default: 'none', ':active': 'scale(.94)', [media.reducedMotion]: 'none' }
   },
   input: {
     width: '100%',
     borderWidth: 1,
     borderStyle: 'solid',
-    borderColor: '#dfe3eb',
+    borderColor: { default: tokens.field, ':focus': tokens.blue },
     backgroundColor: tokens.paper,
     color: tokens.ink,
     borderRadius: 8,
-    paddingBlock: 11,
-    paddingInline: 13,
-    minHeight: 44,
-    marginTop: 7
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    minHeight: 16,
-    padding: 0,
-    accentColor: tokens.blue,
-    flexShrink: 0,
-    marginTop: 0
+    paddingBlock: 9,
+    paddingInline: 12,
+    minHeight: 42,
+    marginTop: 6,
+    outline: { default: null, ':focus-visible': `3px solid ${tokens.blueSoft}` },
+    outlineOffset: 0,
+    transition: 'border-color 150ms ease'
   },
   muted: { color: tokens.muted },
-  subtitle: { color: tokens.muted, marginTop: 6, fontSize: 15, maxWidth: 560 },
   pageHeading: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 16,
-    marginBottom: 28,
-    flexWrap: 'wrap'
+    marginBottom: { default: 24, [media.mobile]: 18 },
+    minHeight: 38
+  },
+  back: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+    marginLeft: -2,
+    fontSize: 14,
+    fontWeight: 500,
+    color: { default: tokens.muted, [media.hover]: { ':hover': tokens.ink } }
+  },
+  count: {
+    marginLeft: 8,
+    fontFamily: tokens.font,
+    fontSize: 15,
+    fontWeight: 500,
+    letterSpacing: 0,
+    color: tokens.faint
   },
   textButton: {
     borderWidth: 0,
@@ -90,68 +113,68 @@ export const ui = stylex.create({
     color: tokens.blue,
     fontSize: 'inherit',
     fontWeight: 500,
-    textDecoration: { default: 'none', [media.hover]: { ':hover': 'underline' } }
+    textDecoration: { default: 'none', [media.hover]: { ':hover': 'underline' } },
+    textUnderlineOffset: 3
   },
   badge: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 5,
-    paddingBlock: 3,
-    paddingInline: 8,
+    borderRadius: 999,
+    paddingBlock: 2,
+    paddingInline: 9,
     fontSize: 12,
     fontWeight: 500,
-    backgroundColor: '#f0f2f6',
-    color: '#626e82'
+    whiteSpace: 'nowrap',
+    backgroundColor: tokens.hover,
+    color: tokens.muted
   },
-  green: { color: '#467559', backgroundColor: '#edf5ee' },
-  amber: { color: '#96752b', backgroundColor: '#fbf5e6' },
+  green: { color: '#2f6b47', backgroundColor: '#e8f3ec' },
+  amber: { color: '#8a6417', backgroundColor: '#fbf2de' },
   panel: {
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: tokens.line,
-    borderRadius: 13,
+    borderRadius: 12,
     backgroundColor: tokens.paper,
     overflow: 'hidden'
   },
   formGrid: {
     display: 'grid',
     gridTemplateColumns: { default: '1fr 1fr', [media.mobile]: '1fr' },
-    gap: 18
+    columnGap: 14,
+    rowGap: 16
   },
   span2: { gridColumn: { default: '1 / -1', [media.mobile]: 'auto' } },
-  formStack: { display: 'flex', flexDirection: 'column', gap: 20 },
+  formStack: { display: 'flex', flexDirection: 'column', gap: 16 },
   formError: {
-    backgroundColor: '#fff1f2',
-    color: '#a13748',
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#f3d9de',
+    backgroundColor: '#fdf1f2',
+    color: tokens.danger,
     borderRadius: 8,
-    paddingBlock: 12,
-    paddingInline: 14,
-    fontSize: 13
+    paddingBlock: 10,
+    paddingInline: 12,
+    fontSize: 14
   },
   help: { fontSize: 13, color: tokens.muted, fontWeight: 400, marginTop: 6 },
   emptyState: {
     textAlign: 'center',
-    paddingBlock: 56,
+    paddingBlock: { default: 56, [media.mobile]: 40 },
     paddingInline: 24,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 14
+    gap: 12
   },
-  emptyText: { maxWidth: 400, color: tokens.muted },
+  emptyText: { maxWidth: 360, color: tokens.muted },
   emptyIcon: {
     display: 'grid',
     placeItems: 'center',
-    width: 56,
-    height: 56,
-    borderRadius: 17,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: tokens.blueSoft,
     color: tokens.blue,
-    marginBottom: 5
+    marginBottom: 4
   },
   segmented: {
     display: 'flex',
@@ -160,23 +183,24 @@ export const ui = stylex.create({
     padding: 3,
     gap: 2,
     borderRadius: 9,
-    backgroundColor: '#eef0f4'
+    backgroundColor: tokens.hover
   },
   segment: {
     borderWidth: 0,
-    borderRadius: 7,
-    paddingBlock: 7,
-    paddingInline: 12,
+    borderRadius: 6,
+    paddingBlock: 5,
+    paddingInline: 11,
     fontSize: 14,
     fontWeight: 500,
     whiteSpace: 'nowrap',
     color: tokens.muted,
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    transition: 'background-color 150ms ease, color 150ms ease'
   },
   segmentOn: {
     color: tokens.ink,
     backgroundColor: tokens.paper,
-    boxShadow: '0 1px 2px #29324718'
+    boxShadow: '0 1px 2px #1e233014'
   },
   srOnly: {
     position: 'absolute',
@@ -201,14 +225,20 @@ export const ui = stylex.create({
   toast: {
     display: 'flex',
     alignItems: 'center',
-    gap: 12,
-    paddingBlock: 10,
-    paddingInline: 17,
+    gap: 10,
+    paddingBlock: 6,
+    paddingLeft: 14,
+    paddingRight: 6,
     backgroundColor: tokens.ink,
     color: tokens.paper,
-    borderRadius: 11,
-    boxShadow: '0 8px 30px #29324722',
+    borderRadius: 10,
+    boxShadow: '0 8px 30px #1e233026',
     maxWidth: 520,
-    fontSize: 13
-  }
+    fontSize: 14,
+    animationName: enter,
+    animationDuration: '220ms',
+    animationTimingFunction: tokens.easeOut,
+    animationFillMode: 'both'
+  },
+  toastClose: { color: '#ffffffa0', width: 30, height: 30 }
 });

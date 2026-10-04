@@ -32,12 +32,12 @@
 {@render children()}
 <div {...stylex.attrs(ui.toastRegion)} aria-live="polite" aria-atomic="true">
   {#if notice.message}<div {...stylex.attrs(ui.toast)}>
-      {#if notice.tone === 'success'}<Check size={18} />{:else}<CircleAlert size={18} />{/if}<span
+      {#if notice.tone === 'success'}<Check size={16} />{:else}<CircleAlert size={16} />{/if}<span
         >{notice.message}</span
       ><button
         aria-label="Dismiss notification"
-        {...stylex.attrs(ui.iconButton)}
-        onclick={() => (notice.message = '')}><X size={16} /></button
+        {...stylex.attrs(ui.iconButton, ui.toastClose)}
+        onclick={() => (notice.message = '')}><X size={15} /></button
       >
     </div>{/if}
 </div>

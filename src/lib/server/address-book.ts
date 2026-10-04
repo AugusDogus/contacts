@@ -1,12 +1,14 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, desc, eq, exists, gt, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, exists, gt, isNull, ne, sql } from 'drizzle-orm';
 import { contactInput, type ContactInput } from '../contact';
 import { InvitationToken } from './invitation-token';
+import { invitationReference } from '../invitation-token';
 import type { AppDatabase } from './db';
 import { contacts, invitations, profiles, savedCards } from './schema';
 
 export type Profile = typeof profiles.$inferSelect;
 export type Invitation = Omit<typeof invitations.$inferSelect, 'tokenHash'>;
+const INVITATION_LIFETIME = 30 * 86_400_000;
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const reservedSlugs = new Set([
   'www',
@@ -59,13 +61,24 @@ export function addressBook(db: AppDatabase) {
   }
   async function listContacts(ownerId: string) {
     const rows = await db
-      .select()
+      .select({
+        contact: contacts,
+        id: invitations.id,
+        label: invitations.label,
+        reference: invitations.reference
+      })
       .from(contacts)
+      .leftJoin(invitations, eq(invitations.id, contacts.invitationId))
       .where(eq(contacts.ownerId, ownerId))
       .orderBy(desc(contacts.createdAt));
-    return rows.map(({ claimHash: _claimHash, ...row }) => ({
+    return rows.map(({ contact: { claimHash: _claimHash, ...row }, id, label, reference }) => ({
       ...row,
-      data: contactInput.parse(row.data)
+      data: contactInput.parse(row.data),
+      // Which link produced a card, so a joke answer can be traced to a conversation.
+      source:
+        id === null
+          ? null
+          : { label: label ?? '', reference: invitationReference({ id, reference }) }
     }));
   }
   async function listInvitations(ownerId: string): Promise<Invitation[]> {
@@ -75,6 +88,50 @@ export function addressBook(db: AppDatabase) {
       .where(eq(invitations.ownerId, ownerId))
       .orderBy(desc(invitations.createdAt));
     return rows.map(({ tokenHash: _hash, ...invitation }) => invitation);
+  }
+  async function openInvitations(ownerId: string) {
+    return (await listInvitations(ownerId)).filter(({ status }) => status === 'pending');
+  }
+  const ownedOpen = (ownerId: string, id: string) =>
+    and(
+      eq(invitations.id, id),
+      eq(invitations.ownerId, ownerId),
+      eq(invitations.status, 'pending')
+    );
+  async function deleteInvitation(ownerId: string, id: string) {
+    // Used links stay because their contact references them as its source.
+    const deleted = await db
+      .delete(invitations)
+      .where(ownedOpen(ownerId, id))
+      .returning({ id: invitations.id });
+    return deleted.length > 0;
+  }
+  async function renewInvitation(ownerId: string, id: string) {
+    const renewed = await db
+      .update(invitations)
+      .set({ expiresAt: Date.now() + INVITATION_LIFETIME })
+      .where(ownedOpen(ownerId, id))
+      .returning({ id: invitations.id });
+    return renewed.length > 0;
+  }
+  async function renameInvitation(ownerId: string, id: string, label: string) {
+    const renamed = await db
+      .update(invitations)
+      .set({ label })
+      .where(and(eq(invitations.id, id), eq(invitations.ownerId, ownerId)))
+      .returning({ id: invitations.id });
+    return renamed.length > 0;
+  }
+  async function invitationState(token: string) {
+    const row = await db
+      .select({ slug: profiles.slug, status: invitations.status, expiresAt: invitations.expiresAt })
+      .from(invitations)
+      .innerJoin(profiles, eq(profiles.ownerId, invitations.ownerId))
+      .where(and(eq(invitations.tokenHash, hash(token)), ne(invitations.status, 'revoked')))
+      .get();
+    if (!row) return null;
+    const state = row.status === 'used' ? 'used' : row.expiresAt > Date.now() ? 'open' : 'expired';
+    return { slug: row.slug, state } as const;
   }
   async function createInvitations(ownerId: string, count: number, label: string) {
     const generated: (Invitation & { token: string })[] = [];
@@ -87,17 +144,17 @@ export function addressBook(db: AppDatabase) {
           id: randomUUID(),
           ownerId,
           token,
-          // An owner-only fragment lets people search their messages without storing the token.
+          // A short fragment the owner can search for in their messages.
           reference: token.slice(0, 3),
           label: label ? (count > 1 ? `${label} ${index + 1}` : label) : '',
           status: 'pending' as const,
           createdAt: Date.now(),
-          expiresAt: Date.now() + 30 * 86_400_000
+          expiresAt: Date.now() + INVITATION_LIFETIME
         };
       });
       const inserted = await db
         .insert(invitations)
-        .values(candidates.map(({ token, ...invite }) => ({ ...invite, tokenHash: hash(token) })))
+        .values(candidates.map((invite) => ({ ...invite, tokenHash: hash(invite.token) })))
         .onConflictDoNothing({ target: invitations.tokenHash })
         .returning({ id: invitations.id });
       const ids = new Set(inserted.map(({ id }) => id));
@@ -251,6 +308,11 @@ export function addressBook(db: AppDatabase) {
     ensureProfile,
     contacts: listContacts,
     invitations: listInvitations,
+    openInvitations,
+    deleteInvitation,
+    renewInvitation,
+    renameInvitation,
+    invitationState,
     createInvitations,
     invitationPage,
     invitation,

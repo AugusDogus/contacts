@@ -1,26 +1,39 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '../tokens.stylex';
+const pop = stylex.keyframes({
+  from: { opacity: 0, transform: 'translateY(8px) scale(.97)' },
+  to: { opacity: 1, transform: 'none' }
+});
+const fade = stylex.keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 export const styles = stylex.create({
   dialog: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: tokens.line,
-    borderRadius: 16,
+    borderWidth: 0,
+    borderRadius: 14,
     padding: 0,
-    width: 'min(520px, calc(100vw - 32px))',
+    width: 'min(460px, calc(100vw - 24px))',
     maxHeight: 'calc(100dvh - 48px)',
     color: tokens.ink,
-    boxShadow: '0 24px 100px #1b24452b',
-    '::backdrop': { backgroundColor: '#17223d55', backdropFilter: 'blur(3px)' }
+    boxShadow: '0 0 0 1px #1e23300f, 0 24px 64px #1e233033',
+    animationName: { default: pop, [media.reducedMotion]: fade },
+    animationDuration: '220ms',
+    animationTimingFunction: tokens.easeOut,
+    '::backdrop': {
+      backgroundColor: '#1e233052',
+      animationName: fade,
+      animationDuration: '220ms',
+      animationTimingFunction: tokens.easeOut
+    }
   },
-  wide: { width: 'min(680px, calc(100vw - 32px))' },
-  modalBody: { padding: { default: 28, [media.mobile]: 22 } },
+  wide: { width: 'min(640px, calc(100vw - 24px))' },
+  modalBody: { padding: { default: 24, [media.mobile]: 20 } },
   header: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 20,
-    marginBottom: 20
+    gap: 16,
+    marginTop: -4,
+    marginRight: -8,
+    marginBottom: 16
   },
-  title: { fontSize: 22, margin: 0, overflowWrap: 'anywhere' }
+  title: { fontSize: 19, margin: 0, overflowWrap: 'anywhere' }
 });

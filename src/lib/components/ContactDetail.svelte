@@ -21,6 +21,15 @@
       .filter(Boolean)
       .join('\n')
   );
+  let added = $derived(
+    [
+      `Added ${new Date(contact.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      contact.source &&
+        `with link ${contact.source.label ? `“${contact.source.label}” ` : ''}#${contact.source.reference}`
+    ]
+      .filter(Boolean)
+      .join(' ')
+  );
   async function remove() {
     deleting = true;
     try {
@@ -37,21 +46,21 @@
 
 <Modal title={Contact.name(data)} {onclose}>
   <div {...stylex.attrs(styles.top)}>
-    <Avatar person={data} size={64} />
-    <div {...stylex.attrs(styles.topText)}>
-      {#if data.pronouns}<p {...stylex.attrs(ui.muted)}>{data.pronouns}</p>{/if}
-      <button
-        {...stylex.attrs(styles.favorite, contact.favorite && styles.favoriteOn)}
-        aria-pressed={contact.favorite}
-        onclick={async () => {
-          try {
-            await setFavorite({ id: contact.id, favorite: !contact.favorite });
-          } catch (cause) {
-            failure(cause);
-          }
-        }}><Star size={15} fill={contact.favorite ? 'currentColor' : 'none'} />Favorite</button
-      >
-    </div>
+    <Avatar person={data} size={56} />
+    <p {...stylex.attrs(styles.topText)}>
+      {[data.pronouns, data.company].filter(Boolean).join(' · ')}
+    </p>
+    <button
+      {...stylex.attrs(ui.button, ui.small, contact.favorite && styles.favoriteOn)}
+      aria-pressed={contact.favorite}
+      onclick={async () => {
+        try {
+          await setFavorite({ id: contact.id, favorite: !contact.favorite });
+        } catch (cause) {
+          failure(cause);
+        }
+      }}><Star size={14} fill={contact.favorite ? 'currentColor' : 'none'} />Favorite</button
+    >
   </div>
   <dl {...stylex.attrs(styles.details)}>
     {#if data.email}<div {...stylex.attrs(styles.row)}>
@@ -72,10 +81,6 @@
           {Contact.birthdayLabel(data.birthday)}, {data.birthday.slice(0, 4)}
         </dd>
       </div>{/if}
-    {#if data.company}<div {...stylex.attrs(styles.row)}>
-        <dt {...stylex.attrs(styles.term)}>Company</dt>
-        <dd {...stylex.attrs(styles.value)}>{data.company}</dd>
-      </div>{/if}
     {#if data.website}<div {...stylex.attrs(styles.row)}>
         <dt {...stylex.attrs(styles.term)}>Website</dt>
         <dd {...stylex.attrs(styles.value)}>
@@ -87,18 +92,23 @@
         <dd {...stylex.attrs(styles.value, styles.lines)}>{data.notes}</dd>
       </div>{/if}
   </dl>
+  <p {...stylex.attrs(styles.source)}>{added}</p>
   {#if confirming}<div {...stylex.attrs(styles.confirm)} role="alert">
-      <p>Remove {data.firstName} from your address book? This can’t be undone.</p>
+      <p>Remove {data.firstName}? This can’t be undone.</p>
       <div {...stylex.attrs(styles.actions)}>
-        <button {...stylex.attrs(ui.button, ui.danger)} disabled={deleting} onclick={remove}
-          >{deleting ? 'Removing…' : 'Remove'}</button
-        ><button {...stylex.attrs(ui.button)} onclick={() => (confirming = false)}>Cancel</button>
+        <button {...stylex.attrs(ui.button, ui.small)} onclick={() => (confirming = false)}
+          >Cancel</button
+        ><button
+          {...stylex.attrs(ui.button, ui.small, ui.danger)}
+          disabled={deleting}
+          onclick={remove}>{deleting ? 'Removing…' : 'Remove'}</button
+        >
       </div>
     </div>{:else}<div {...stylex.attrs(styles.actions, styles.footer)}>
-      <a {...stylex.attrs(ui.button)} href="/export?id={contact.id}" download
-        ><Download size={16} />Download vCard</a
-      ><button {...stylex.attrs(ui.textButton, styles.remove)} onclick={() => (confirming = true)}
+      <button {...stylex.attrs(ui.textButton, styles.remove)} onclick={() => (confirming = true)}
         >Remove</button
+      ><a {...stylex.attrs(ui.button, ui.small)} href="/export?id={contact.id}" download
+        ><Download size={14} />vCard</a
       >
     </div>{/if}
 </Modal>

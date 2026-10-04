@@ -3,36 +3,37 @@ import { tokens, media } from '../tokens.stylex';
 export const styles = stylex.create({
   shell: {
     minHeight: '100dvh',
-    paddingTop: { default: 28, [media.mobile]: 20 },
-    paddingInline: { default: 32, [media.mobile]: 16 },
-    paddingBottom: 48,
+    paddingTop: { default: 24, [media.mobile]: 16 },
+    paddingInline: { default: 24, [media.mobile]: 12 },
+    paddingBottom: 40,
     backgroundColor: tokens.surface
   },
   header: {
-    maxWidth: 1040,
+    maxWidth: 880,
     marginInline: 'auto',
-    marginBottom: { default: 48, [media.mobile]: 32 }
+    marginBottom: { default: 40, [media.mobile]: 28 },
+    paddingInline: { default: 0, [media.mobile]: 4 }
   },
-  content: { width: '100%', maxWidth: 600, marginInline: 'auto' },
-  intro: { textAlign: 'center', marginBottom: 28 },
+  content: { width: '100%', maxWidth: 560, marginInline: 'auto' },
+  intro: { textAlign: 'center', marginBottom: 24, paddingInline: 8 },
   avatar: {
     display: 'grid',
     placeItems: 'center',
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: '50%',
     backgroundColor: tokens.blueSoft,
     color: tokens.blue,
     fontFamily: tokens.heading,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 600,
     marginInline: 'auto',
-    marginBottom: 16
+    marginBottom: 14
   },
-  title: { fontSize: { default: 30, [media.mobile]: 25 }, overflowWrap: 'anywhere' },
+  title: { fontSize: { default: 26, [media.mobile]: 22 }, overflowWrap: 'anywhere' },
   message: {
-    maxWidth: 460,
-    marginTop: 12,
+    maxWidth: 440,
+    marginTop: 8,
     marginInline: 'auto',
     color: tokens.muted,
     overflowWrap: 'anywhere',
@@ -43,17 +44,18 @@ export const styles = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: tokens.line,
-    borderRadius: 16,
-    padding: { default: 32, [media.mobile]: 20 }
+    borderRadius: 14,
+    padding: { default: 28, [media.mobile]: 18 },
+    boxShadow: '0 1px 2px #1e23300a'
   },
-  footer: { marginTop: 20, textAlign: 'center', fontSize: 13, color: tokens.muted },
+  footer: { marginTop: 16, textAlign: 'center', fontSize: 13, color: tokens.muted },
   closed: {
-    paddingBlock: 12,
+    paddingBlock: 8,
     textAlign: 'center',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 14
   },
-  closedText: { maxWidth: 400, color: tokens.muted }
+  closedText: { maxWidth: 380, color: tokens.muted }
 });

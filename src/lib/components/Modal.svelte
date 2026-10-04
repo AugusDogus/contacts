@@ -35,7 +35,7 @@
       <button
         {...stylex.attrs(ui.iconButton)}
         onclick={() => dialog.close()}
-        aria-label="Close dialog"><X size={20} /></button
+        aria-label="Close dialog"><X size={18} /></button
       >
     </header>
     {@render children()}

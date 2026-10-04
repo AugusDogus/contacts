@@ -1,20 +1,59 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
-  stack: { maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 20 },
-  section: { padding: { default: 28, [media.mobile]: 20 } },
-  heading: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 },
-  text: { color: tokens.muted, marginBottom: 18, maxWidth: 560 },
-  actions: { display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
-  after: { marginTop: 18 },
-  fine: { fontSize: 13, color: tokens.muted, marginTop: 18 },
+  row: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    paddingBlock: 16,
+    paddingInline: { default: 18, [media.mobile]: 14 },
+    flexWrap: { default: 'nowrap', [media.mobile]: 'wrap' },
+    borderTopWidth: { default: 1, ':first-child': 0 },
+    borderTopStyle: 'solid',
+    borderTopColor: tokens.line
+  },
+  icon: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    backgroundColor: tokens.surface,
+    color: tokens.muted,
+    flexShrink: 0
+  },
+  text: { flexGrow: 1, flexBasis: 0, minWidth: 0, lineHeight: 1.35 },
+  title: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontFamily: tokens.font,
+    fontSize: 15,
+    fontWeight: 600,
+    letterSpacing: 0
+  },
+  detail: { fontSize: 13, color: tokens.muted },
+  actions: {
+    display: 'flex',
+    gap: 8,
+    marginLeft: { default: 0, [media.mobile]: 50 }
+  },
+  notes: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    paddingInline: { default: 18, [media.mobile]: 14 },
+    paddingBottom: 16,
+    marginTop: -4
+  },
   uncertain: {
-    marginTop: 18,
     fontSize: 14,
-    color: '#7a5d22',
-    backgroundColor: '#fff9ec',
-    padding: 16,
+    color: '#7a5a17',
+    backgroundColor: '#fbf2de',
+    paddingBlock: 10,
+    paddingInline: 12,
     borderRadius: 8
   },
-  uncertainList: { paddingLeft: 20, marginTop: 8, marginBottom: 0 }
+  uncertainList: { paddingLeft: 20, marginTop: 6, marginBottom: 0 },
+  fine: { fontSize: 13, color: tokens.muted, marginTop: 12 }
 });

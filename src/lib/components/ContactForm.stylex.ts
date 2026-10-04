@@ -1,56 +1,45 @@
 import * as stylex from '@stylexjs/stylex';
-import { tokens } from '../tokens.stylex';
+import { tokens, media } from '../tokens.stylex';
 export const styles = stylex.create({
   form: { display: 'flex', flexDirection: 'column', gap: 24 },
-  photoRow: { display: 'flex', alignItems: 'center', gap: 16 },
+  photoRow: { display: 'flex', alignItems: 'center', gap: 14 },
+  photoPick: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 12,
+    cursor: 'pointer',
+    borderRadius: 999,
+    color: tokens.blue,
+    fontWeight: 500,
+    outline: { default: 'none', ':has(:focus-visible)': `2px solid ${tokens.blue}` },
+    outlineOffset: 4
+  },
   photoPlaceholder: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     flexShrink: 0,
-    backgroundColor: tokens.surface,
+    backgroundColor: { default: tokens.surface, [media.hover]: { ':hover': tokens.hover } },
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#cfd5e2',
+    borderColor: '#cdd1d8',
     borderRadius: '50%',
     display: 'grid',
     placeItems: 'center',
-    color: tokens.muted
-  },
-  photoLabel: { display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 6 },
-  file: {
-    width: '100%',
-    maxWidth: 260,
-    fontSize: 13,
     color: tokens.muted,
-    '::file-selector-button': {
-      borderWidth: 0,
-      borderRadius: 6,
-      paddingBlock: 6,
-      paddingInline: 10,
-      backgroundColor: tokens.blueSoft,
-      color: tokens.blue,
-      cursor: 'pointer',
-      marginRight: 10
-    }
+    transition: 'background-color 150ms ease'
   },
-  hint: { fontSize: 13, color: tokens.muted, marginTop: -10 },
-  section: {
-    borderTopWidth: 1,
-    borderTopStyle: 'solid',
-    borderTopColor: tokens.line,
-    paddingTop: 22
+  photoText: { fontSize: 14 },
+  photoRemove: { color: tokens.muted, fontSize: 14 },
+  section: { borderWidth: 0, margin: 0, padding: 0, minWidth: 0 },
+  sectionTitle: {
+    padding: 0,
+    marginBottom: 12,
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: tokens.faint
   },
-  sectionTitle: { marginBottom: 14 },
-  optional: { fontSize: 13, fontWeight: 400, color: tokens.muted },
-  summary: { fontSize: 14, color: tokens.blue, cursor: 'pointer', marginBottom: 16 },
-  consent: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 10,
-    fontSize: 14,
-    color: tokens.muted,
-    fontWeight: 400
-  },
-  consentCheck: { marginTop: 3 },
-  saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center', marginTop: -12 }
+  submit: { display: 'flex', flexDirection: 'column', gap: 10 },
+  saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center' }
 });

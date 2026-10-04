@@ -7,8 +7,9 @@
     font-family: 'Instrument Sans', sans-serif;
     font-size: 15px;
     line-height: 1.55;
-    color: #293247;
-    background: #f7f8fa;
+    color: #1e2330;
+    background: #f7f7f8;
+    -webkit-font-smoothing: antialiased;
     font-synthesis: none;
   }
   button,
@@ -40,8 +41,8 @@
     text-decoration: none;
   }
   :focus-visible {
-    outline: 3px solid #7b97ee;
-    outline-offset: 3px;
+    outline: 2px solid #3659d9;
+    outline-offset: 2px;
   }
   h1,
   h2,
@@ -56,14 +57,14 @@
     font-family: 'Bricolage Grotesque', sans-serif;
     font-weight: 600;
     line-height: 1.2;
-    letter-spacing: -0.7px;
+    letter-spacing: -0.5px;
   }
   h1 {
-    font-size: 30px;
+    font-size: 26px;
   }
   h2 {
-    font-size: 20px;
-    letter-spacing: -0.4px;
+    font-size: 18px;
+    letter-spacing: -0.3px;
   }
   h3 {
     font-size: 16px;
@@ -74,7 +75,7 @@
   }
   input::placeholder,
   textarea::placeholder {
-    color: #8893a5;
+    color: #9ca3af;
   }
   textarea {
     resize: vertical;
@@ -83,10 +84,11 @@
     display: block;
     font-weight: 500;
     font-size: 14px;
+    color: #3b4252;
   }
   @media (max-width: 650px) {
     h1 {
-      font-size: 26px;
+      font-size: 23px;
     }
   }
 }

@@ -22,7 +22,6 @@
     </div>
     <div {...stylex.attrs(styles.card)}>{@render children()}</div>
     <p {...stylex.attrs(styles.footer)}>
-      Shared with {name} for their address book.
       <a href="{page.data.appUrl || ''}/privacy">Privacy</a>
     </p>
   </main>

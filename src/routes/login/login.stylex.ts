@@ -3,32 +3,32 @@ import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
   shell: {
     minHeight: '100dvh',
-    paddingTop: { default: 28, [media.mobile]: 20 },
-    paddingInline: { default: 32, [media.mobile]: 20 },
-    paddingBottom: 48,
-    backgroundColor: tokens.paper
+    paddingTop: { default: 24, [media.mobile]: 16 },
+    paddingInline: { default: 24, [media.mobile]: 16 },
+    paddingBottom: 40,
+    backgroundColor: tokens.surface
   },
-  header: { maxWidth: 1040, marginInline: 'auto' },
+  header: { maxWidth: 880, marginInline: 'auto' },
   main: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 360,
     marginInline: 'auto',
-    paddingTop: { default: 40, [media.mobile]: 24 }
+    paddingTop: { default: 48, [media.mobile]: 24 }
   },
-  art: { display: 'flex', justifyContent: 'center', marginBottom: 20 },
-  title: { textAlign: 'center' },
-  intro: { color: tokens.muted, textAlign: 'center', marginTop: 8, marginBottom: 28 },
+  art: { display: 'flex', justifyContent: 'center', marginBottom: 16 },
+  title: { textAlign: 'center', fontSize: 24 },
+  intro: { color: tokens.muted, textAlign: 'center', marginTop: 6 },
+  methods: { marginTop: 24 },
   divider: {
     display: 'flex',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     fontSize: 13,
-    color: tokens.muted,
-    marginBlock: 20,
+    color: tokens.faint,
+    marginBlock: 16,
     '::before': { content: '""', height: 1, backgroundColor: tokens.line, flexGrow: 1 },
     '::after': { content: '""', height: 1, backgroundColor: tokens.line, flexGrow: 1 }
   },
-  toggle: { textAlign: 'center', marginTop: 24, color: tokens.muted, fontSize: 14 },
-  privacy: { textAlign: 'center', marginTop: 32, fontSize: 13 },
-  googleLetter: { color: '#4c7fcf', fontFamily: 'Arial, sans-serif', fontSize: 18 }
+  toggle: { textAlign: 'center', marginTop: 20, color: tokens.muted, fontSize: 14 },
+  privacy: { textAlign: 'center', marginTop: 28, fontSize: 13 }
 });

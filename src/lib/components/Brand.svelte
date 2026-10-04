@@ -5,5 +5,5 @@
 </script>
 
 <a {href} {...stylex.attrs(styles.brand)} aria-label="Contacts Exchange home"
-  ><img src="/favicon.svg" alt="" width="28" height="28" /><span>Contacts Exchange</span></a
+  ><img src="/favicon.svg" alt="" width="24" height="24" /><span>Contacts Exchange</span></a
 >

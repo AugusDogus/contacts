@@ -132,9 +132,9 @@ describe('private invitations', () => {
     expect(await book.claim(result.receipt, 'attacker')).toBe(false);
     expect((await book.contacts(owner.ownerId))[0]?.linkedUserId).toBe('friend');
   });
-  test('stores hashes without persisting reusable raw tokens', async () => {
-    const { db, invite } = await setup();
-    expect(JSON.stringify(await db.select().from(invitations))).not.toContain(invite.token);
+  test("only the owner's listing exposes a link's token", async () => {
+    const { book, other, invite } = await setup();
+    expect(JSON.stringify(await book.openInvitations(other.ownerId))).not.toContain(invite.token);
   });
   test('a subdomain cannot be claimed by a second account and reserved names are blocked', async () => {
     const { book } = await setup();
@@ -151,5 +151,65 @@ describe('private invitations', () => {
       .delete(contacts)
       .where(and(eq(contacts.ownerId, owner.ownerId), eq(contacts.invitationId, invite.id)));
     expect((await book.submit(invite.token, owner.slug, contact)).ok).toBe(false);
+  });
+});
+describe('managing open invitations', () => {
+  test('lists only open and expired links, with their full token so they can be copied again', async () => {
+    const { db, book, owner, invite, contact } = await setup();
+    const [used] = await book.createInvitations(owner.ownerId, 1, 'Riley');
+    if (!used) throw new Error('Test invitation was not created.');
+    expect((await book.submit(used.token, owner.slug, contact)).ok).toBe(true);
+    await db.update(invitations).set({ status: 'revoked' }).where(eq(invitations.id, used.id));
+    const [expired] = await book.createInvitations(owner.ownerId, 1, 'Sam');
+    if (!expired) throw new Error('Test invitation was not created.');
+    await db.update(invitations).set({ expiresAt: 0 }).where(eq(invitations.id, expired.id));
+    const open = await book.openInvitations(owner.ownerId);
+    expect(
+      open
+        .map(({ label, token }) => ({ label, token }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    ).toEqual([
+      { label: 'Jamie', token: invite.token },
+      { label: 'Sam', token: expired.token }
+    ]);
+  });
+  test('deleting an open link stops it working, and used links cannot be deleted', async () => {
+    const { book, owner, other, invite, contact } = await setup();
+    expect(await book.deleteInvitation(other.ownerId, invite.id)).toBe(false);
+    expect(await book.deleteInvitation(owner.ownerId, invite.id)).toBe(true);
+    expect(await book.invitationState(invite.token)).toBeNull();
+    expect((await book.submit(invite.token, owner.slug, contact)).ok).toBe(false);
+    const [used] = await book.createInvitations(owner.ownerId, 1, '');
+    if (!used) throw new Error('Test invitation was not created.');
+    expect((await book.submit(used.token, owner.slug, contact)).ok).toBe(true);
+    expect(await book.deleteInvitation(owner.ownerId, used.id)).toBe(false);
+    expect((await book.contacts(owner.ownerId))[0]?.source).toEqual({
+      label: '',
+      reference: invitationReference(used)
+    });
+  });
+  test('renewing an expired link lets the same URL accept a submission again', async () => {
+    const { db, book, owner, other, invite, contact } = await setup();
+    await db.update(invitations).set({ expiresAt: 0 }).where(eq(invitations.id, invite.id));
+    expect((await book.invitationState(invite.token))?.state).toBe('expired');
+    expect(await book.renewInvitation(other.ownerId, invite.id)).toBe(false);
+    expect(await book.renewInvitation(owner.ownerId, invite.id)).toBe(true);
+    expect((await book.invitationState(invite.token))?.state).toBe('open');
+    expect((await book.submit(invite.token, owner.slug, contact)).ok).toBe(true);
+    expect(await book.renewInvitation(owner.ownerId, invite.id)).toBe(false);
+  });
+  test('renaming a link changes only its private label', async () => {
+    const { book, owner, other, invite } = await setup();
+    expect(await book.renameInvitation(other.ownerId, invite.id, 'Nope')).toBe(false);
+    expect(await book.renameInvitation(owner.ownerId, invite.id, 'Jamie Chen')).toBe(true);
+    expect((await book.openInvitations(owner.ownerId))[0]?.label).toBe('Jamie Chen');
+  });
+  test('reports why a link is closed and which page currently owns it', async () => {
+    const { book, owner, invite, contact } = await setup();
+    expect(await book.invitationState('unknown')).toBeNull();
+    expect(await book.invitationState(invite.token)).toEqual({ slug: owner.slug, state: 'open' });
+    await book.saveProfile(owner.ownerId, { name: owner.name, slug: 'renamed', message: '' });
+    expect((await book.submit(invite.token, 'renamed', contact)).ok).toBe(true);
+    expect(await book.invitationState(invite.token)).toEqual({ slug: 'renamed', state: 'used' });
   });
 });

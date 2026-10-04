@@ -1,14 +1,17 @@
 import * as stylex from '@stylexjs/stylex';
 
 export const tokens = stylex.defineVars({
-  ink: '#293247',
-  muted: '#727d90',
+  ink: '#1e2330',
+  muted: '#6b7280',
+  faint: '#9ca3af',
   blue: '#3659d9',
-  blueSoft: '#edf1ff',
-  line: '#e8eaf0',
+  blueSoft: '#eef1fd',
+  line: '#ebecef',
+  field: '#dcdfe5',
   paper: '#ffffff',
-  surface: '#f7f8fa',
-  sage: '#f0f3ed',
+  surface: '#f7f7f8',
+  hover: '#f3f4f6',
+  danger: '#b42336',
   font: '"Instrument Sans", sans-serif',
   heading: '"Bricolage Grotesque", sans-serif',
   easeOut: 'cubic-bezier(.23,1,.32,1)'

@@ -59,7 +59,8 @@ export const contactSchema = z.object({
   linkedUserId: z.string().nullable(),
   createdAt: z.number(),
   data: contactInput,
-  favorite: z.boolean()
+  favorite: z.boolean(),
+  source: z.object({ label: z.string(), reference: z.string() }).nullable()
 });
 export type Contact = z.infer<typeof contactSchema>;
 

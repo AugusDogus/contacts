@@ -3,16 +3,14 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './settings.stylex.ts';
-  import { page } from '$app/state';
   import { PUBLIC_CONTACTS_DOMAIN } from '$app/env/public';
-  import { Copy } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import { getAddressBook, claimCard, saveMyCard, saveProfile } from '#lib/contacts.remote.ts';
   import ContactForm from '#lib/components/ContactForm.svelte';
   import Modal from '#lib/components/Modal.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
   import { authClient } from '#lib/auth-client.ts';
   import { Contact } from '#lib/contact.ts';
-  import { contactPageUrl } from '#lib/links.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
@@ -25,21 +23,12 @@
     slug = book.profile.slug;
     message = book.profile.message;
   });
-  let url = $derived(contactPageUrl(book.profile.slug, page.url.origin));
   let saving = $state(false);
   let error = $state('');
   let editing = $state(false);
   let claimed = $state(false);
   let claiming = $state(false);
   async function save() {
-    if (
-      slug !== book.profile.slug &&
-      book.invitations.some((i) => i.status === 'pending') &&
-      !confirm(
-        'Older invitation links that include your page address will stop working. Newer short links are not affected. Change it?'
-      )
-    )
-      return;
     saving = true;
     error = '';
     try {
@@ -69,29 +58,26 @@
 </script>
 
 <svelte:head><title>Settings | Contacts Exchange</title></svelte:head>
+<a href="/" {...stylex.attrs(ui.back)}><ArrowLeft size={15} />People</a>
 <div {...stylex.attrs(ui.pageHeading)}><h1>Settings</h1></div>
 <div {...stylex.attrs(styles.stack)}>
   {#if data.canClaim && !claimed && book.viewer.kind === 'account'}<section
       {...stylex.attrs(styles.claim)}
       aria-labelledby="claim-title"
     >
-      <h2 id="claim-title" {...stylex.attrs(styles.title)}>Keep the card you just sent?</h2>
-      <p {...stylex.attrs(styles.text)}>
-        Save it to your account so it’s ready next time someone invites you.
-      </p>
-      <button {...stylex.attrs(ui.button, ui.primary)} disabled={claiming} onclick={claim}
+      <h2 id="claim-title" {...stylex.attrs(styles.claimTitle)}>Keep the card you just sent?</h2>
+      <button {...stylex.attrs(ui.button, ui.small, ui.primary)} disabled={claiming} onclick={claim}
         >{claiming ? 'Saving…' : 'Save card'}</button
       >
     </section>{/if}
 
-  <section {...stylex.attrs(ui.panel, styles.section)} aria-labelledby="page-title">
-    <h2 id="page-title" {...stylex.attrs(styles.title)}>Your page</h2>
-    <p {...stylex.attrs(styles.text)}>
-      People see your name and note when they open one of your invitations.
-    </p>
+  <section aria-labelledby="page-title">
+    <div {...stylex.attrs(styles.sectionHead)}>
+      <h2 id="page-title" {...stylex.attrs(styles.title)}>What friends see</h2>
+    </div>
     <form
       method="POST"
-      {...stylex.attrs(ui.formStack)}
+      {...stylex.attrs(ui.panel, styles.body, ui.formStack)}
       onsubmit={(event) => {
         event.preventDefault();
         void save();
@@ -106,85 +92,78 @@
           autocomplete="name"
         /></label
       ><label
-        >Page address
+        >Page link
         <span {...stylex.attrs(styles.address)}
           ><input
             {...stylex.attrs(styles.slugInput)}
             bind:value={slug}
-            aria-label="Page address"
+            aria-label="Page link"
             required
             minlength="3"
             maxlength="40"
             pattern="[a-z0-9]([a-z0-9]|-)*[a-z0-9]"
+            title="Lowercase letters, numbers, and hyphens"
             spellcheck="false"
             autocapitalize="none"
           /><span {...stylex.attrs(styles.suffix)}>.{PUBLIC_CONTACTS_DOMAIN}</span></span
-        ><span {...stylex.attrs(ui.help)}>Lowercase letters, numbers, and hyphens.</span></label
+        ></label
       ><label
-        >Note<textarea
+        >Message<textarea
           {...stylex.attrs(ui.input)}
           bind:value={message}
           required
           maxlength="500"
-          rows="3"></textarea></label
+          rows="2"
+          placeholder="Shown to people you invite"></textarea></label
       >
       {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
-      <div {...stylex.attrs(styles.formFooter)}>
+      <div>
         <button {...stylex.attrs(ui.button, ui.primary)} disabled={saving}
           >{saving ? 'Saving…' : 'Save'}</button
-        >
-        <span {...stylex.attrs(styles.share)}
-          ><a href={url} target="_blank" rel="noopener noreferrer">View page</a><button
-            {...stylex.attrs(ui.textButton, styles.copy)}
-            type="button"
-            onclick={async () => {
-              try {
-                await navigator.clipboard.writeText(url);
-                notify('Page address copied');
-              } catch (cause) {
-                failure(cause);
-              }
-            }}><Copy size={14} />Copy address</button
-          ></span
         >
       </div>
     </form>
   </section>
 
-  <section {...stylex.attrs(ui.panel, styles.section)} aria-labelledby="card-title">
-    <h2 id="card-title" {...stylex.attrs(styles.title)}>Your card</h2>
-    <p {...stylex.attrs(styles.text)}>
-      Save your own details to fill in other people’s invitations faster.
-    </p>
-    {#if book.savedCard}<div {...stylex.attrs(styles.card)}>
-        <Avatar person={book.savedCard} size={44} />
-        <div>
-          <p {...stylex.attrs(styles.cardName)}>{Contact.name(book.savedCard)}</p>
-          <p {...stylex.attrs(ui.muted)}>{book.savedCard.email || book.savedCard.phone}</p>
-        </div>
-      </div>{/if}
-    {#if book.viewer.kind === 'demo'}<a {...stylex.attrs(ui.button)} href="/login"
-        >Create an account to save a card</a
-      >{:else}<button {...stylex.attrs(ui.button)} onclick={() => (editing = true)}
-        >{book.savedCard ? 'Edit card' : 'Create card'}</button
-      >{#if book.savedCard}<p {...stylex.attrs(styles.fine)}>
-          Edits don’t change cards you’ve already sent.
-        </p>{/if}{/if}
+  <section aria-labelledby="card-title">
+    <div {...stylex.attrs(styles.sectionHead)}>
+      <h2 id="card-title" {...stylex.attrs(styles.title)}>Your card</h2>
+    </div>
+    <div {...stylex.attrs(ui.panel, styles.row)}>
+      {#if book.savedCard}<Avatar person={book.savedCard} size={36} />
+        <div {...stylex.attrs(styles.rowText)}>
+          <p {...stylex.attrs(styles.rowTitle)}>{Contact.name(book.savedCard)}</p>
+          <p {...stylex.attrs(styles.rowDetail)}>
+            {book.savedCard.email || book.savedCard.phone}
+          </p>
+        </div>{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>
+          Prefills invitations you receive
+        </p>{/if}
+      {#if book.viewer.kind === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
+          >Sign up</a
+        >{:else}<button {...stylex.attrs(ui.button, ui.small)} onclick={() => (editing = true)}
+          >{book.savedCard ? 'Edit' : 'Create'}</button
+        >{/if}
+    </div>
   </section>
 
-  <section {...stylex.attrs(ui.panel, styles.section)} aria-labelledby="account-title">
-    <h2 id="account-title" {...stylex.attrs(styles.title)}>Account</h2>
-    {#if book.viewer.kind === 'account'}<p {...stylex.attrs(styles.text)}>
-        Signed in as {book.viewer.email}
-      </p>
-      <button
-        {...stylex.attrs(ui.button)}
-        onclick={async () => {
-          await authClient.signOut();
-          window.location.href = '/login';
-        }}>Sign out</button
-      >{:else}<p {...stylex.attrs(styles.text)}>You’re looking at sample data on this device.</p>
-      <a {...stylex.attrs(ui.button, ui.primary)} href="/login">Create an account</a>{/if}
+  <section aria-labelledby="account-title">
+    <div {...stylex.attrs(styles.sectionHead)}>
+      <h2 id="account-title" {...stylex.attrs(styles.title)}>Account</h2>
+    </div>
+    <div {...stylex.attrs(ui.panel, styles.row)}>
+      {#if book.viewer.kind === 'account'}<p {...stylex.attrs(styles.rowText)}>
+          {book.viewer.email}
+        </p>
+        <button
+          {...stylex.attrs(ui.button, ui.small)}
+          onclick={async () => {
+            await authClient.signOut();
+            window.location.href = '/login';
+          }}>Sign out</button
+        >{:else}<p {...stylex.attrs(styles.rowText, styles.rowDetail)}>Viewing sample data</p>
+        <a {...stylex.attrs(ui.button, ui.small, ui.primary)} href="/login">Create account</a>{/if}
+    </div>
     <p {...stylex.attrs(styles.fine)}><a href="/privacy">Privacy policy</a></p>
   </section>
 </div>

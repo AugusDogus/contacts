@@ -10,7 +10,7 @@
   let {
     initial = Contact.empty(),
     recipient,
-    buttonLabel = 'Send my details',
+    buttonLabel = 'Save',
     onsave
   }: {
     initial?: ContactInput;
@@ -19,7 +19,6 @@
     onsave: (contact: ContactInput) => Promise<Result>;
   } = $props();
   let value = $state<ContactInput>(untrack(() => ({ ...initial })));
-  let consent = $state(false);
   let busy = $state(false);
   let photoBusy = $state(false);
   let error = $state('');
@@ -78,10 +77,6 @@
       if (field instanceof HTMLElement) field.focus();
       return;
     }
-    if (recipient && !consent) {
-      error = `Tick the box to confirm you’re sharing these details with ${recipient}.`;
-      return;
-    }
     busy = true;
     try {
       const result = await onsave(parsed.data);
@@ -106,27 +101,23 @@
   }}
 >
   <div {...stylex.attrs(styles.photoRow)}>
-    {#if value.photo}<Avatar person={value} size={64} />{:else}<span
-        {...stylex.attrs(styles.photoPlaceholder)}><Camera size={22} strokeWidth={1.5} /></span
-      >{/if}
-    <div>
-      <label {...stylex.attrs(styles.photoLabel)} for="contact-photo"
-        >{photoBusy ? 'Preparing photo…' : 'Photo'}
-        <span {...stylex.attrs(styles.optional)}>Optional</span></label
-      >
-      <input
-        {...stylex.attrs(styles.file)}
-        id="contact-photo"
+    <label {...stylex.attrs(styles.photoPick)}
+      >{#if value.photo}<Avatar person={value} size={56} />{:else}<span
+          {...stylex.attrs(styles.photoPlaceholder)}><Camera size={20} strokeWidth={1.6} /></span
+        >{/if}<span {...stylex.attrs(styles.photoText)}
+        >{photoBusy ? 'Preparing…' : value.photo ? 'Change photo' : 'Add a photo'}</span
+      ><input
+        {...stylex.attrs(ui.srOnly)}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         onchange={(event) => void photo(event.currentTarget.files?.[0])}
         disabled={busy || photoBusy}
-      />{#if value.photo}<button
-          type="button"
-          {...stylex.attrs(ui.button, ui.small)}
-          onclick={() => (value.photo = '')}>Remove</button
-        >{/if}
-    </div>
+      /></label
+    >{#if value.photo}<button
+        type="button"
+        {...stylex.attrs(ui.textButton, styles.photoRemove)}
+        onclick={() => (value.photo = '')}>Remove</button
+      >{/if}
   </div>
   <div {...stylex.attrs(ui.formGrid)}>
     <label
@@ -137,7 +128,6 @@
         bind:value={value.firstName}
         required
         maxlength="80"
-        placeholder="Jamie"
       /></label
     ><label
       >Last name<input
@@ -147,44 +137,37 @@
         bind:value={value.lastName}
         required
         maxlength="80"
-        placeholder="Chen"
       /></label
     ><label
-      >Email address<input
+      >Email<input
         {...stylex.attrs(ui.input)}
         name="email"
         type="email"
         autocomplete="email"
         bind:value={value.email}
         maxlength="254"
-        placeholder="jamie@example.com"
       /></label
     ><label
-      >Phone number<input
+      >Phone<input
         {...stylex.attrs(ui.input)}
         name="phone"
         type="tel"
         autocomplete="tel"
         bind:value={value.phone}
         maxlength="40"
-        placeholder="+1 (555) 000-0000"
       /></label
     >
   </div>
-  <p {...stylex.attrs(styles.hint)}>
-    Add an email or phone number. The remaining fields are optional.
-  </p>
-  <section {...stylex.attrs(styles.section)} aria-labelledby="form-address">
-    <h3 id="form-address" {...stylex.attrs(styles.sectionTitle)}>Mailing address</h3>
+  <fieldset {...stylex.attrs(styles.section)}>
+    <legend {...stylex.attrs(styles.sectionTitle)}>Address</legend>
     <div {...stylex.attrs(ui.formGrid)}>
       <label {...stylex.attrs(ui.span2)}
-        >Street address<input
+        >Street<input
           {...stylex.attrs(ui.input)}
           name="street"
           autocomplete="street-address"
           bind:value={value.street}
           maxlength="200"
-          placeholder="Street, apartment, or unit"
         /></label
       ><label
         >City<input
@@ -220,9 +203,9 @@
         /></label
       >
     </div>
-  </section>
-  <section {...stylex.attrs(styles.section)} aria-labelledby="form-more">
-    <h3 id="form-more" {...stylex.attrs(styles.sectionTitle)}>More</h3>
+  </fieldset>
+  <fieldset {...stylex.attrs(styles.section)}>
+    <legend {...stylex.attrs(styles.sectionTitle)}>More</legend>
     <div {...stylex.attrs(ui.formGrid)}>
       <label
         >Birthday<input
@@ -240,23 +223,8 @@
           name="pronouns"
           bind:value={value.pronouns}
           maxlength="60"
-          placeholder="she/her"
         /></label
-      ><label {...stylex.attrs(ui.span2)}
-        >Notes<textarea
-          {...stylex.attrs(ui.input)}
-          name="notes"
-          bind:value={value.notes}
-          maxlength="2000"
-          rows="3"
-          placeholder="Best way to reach you, or anything else worth knowing"></textarea></label
-      >
-    </div>
-  </section>
-  <details>
-    <summary {...stylex.attrs(styles.summary)}>Add a company or website</summary>
-    <div {...stylex.attrs(ui.formGrid)}>
-      <label
+      ><label
         >Company<input
           {...stylex.attrs(ui.input)}
           name="company"
@@ -274,24 +242,30 @@
           maxlength="500"
           placeholder="https://"
         /></label
+      ><label {...stylex.attrs(ui.span2)}
+        >Notes<textarea
+          {...stylex.attrs(ui.input)}
+          name="notes"
+          bind:value={value.notes}
+          maxlength="2000"
+          rows="2"></textarea></label
       >
     </div>
-  </details>
-  {#if recipient}<label {...stylex.attrs(styles.consent)}
-      ><input
-        {...stylex.attrs(ui.checkbox, styles.consentCheck)}
-        type="checkbox"
-        bind:checked={consent}
-        required
-      /><span
-        >Share these details with {recipient}. They can keep them in their address book and export
-        them to other apps.</span
-      ></label
-    >{/if}
+  </fieldset>
   {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
-  <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={!ready || busy || photoBusy}
-    >{busy ? (recipient ? 'Sending…' : 'Saving…') : buttonLabel}</button
-  >
-  {#if recipient}<p {...stylex.attrs(styles.saveNote)}>No account needed.</p>{/if}
+  <div {...stylex.attrs(styles.submit)}>
+    <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={!ready || busy || photoBusy}
+      >{busy
+        ? recipient
+          ? 'Sending…'
+          : 'Saving…'
+        : recipient
+          ? `Send to ${recipient}`
+          : buttonLabel}</button
+    >
+    {#if recipient}<p {...stylex.attrs(styles.saveNote)}>
+        {recipient} can save and export these details.
+      </p>{/if}
+  </div>
   <noscript><p>Turn on JavaScript to send your details.</p></noscript>
 </form>

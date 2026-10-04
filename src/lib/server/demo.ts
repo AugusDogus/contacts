@@ -59,8 +59,8 @@ export async function createDemo() {
       favorite: index < 2
     });
   }
-  await book.createInvitations(id, 1, 'For the group chat');
+  await book.createInvitations(id, 1, 'Priya');
   await book.createInvitations(id, 1, 'Taylor');
-  await book.createInvitations(id, 1, 'My college friends');
+  await book.createInvitations(id, 1, '');
   return id;
 }
