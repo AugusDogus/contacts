@@ -34,7 +34,6 @@
       })
       .sort((a, b) => Contact.name(a.data).localeCompare(Contact.name(b.data)))
   );
-  // Favorites lead the list, but searching shows one flat set of results.
   let groups = $derived(
     search.trim()
       ? [{ title: '', contacts: matches }]

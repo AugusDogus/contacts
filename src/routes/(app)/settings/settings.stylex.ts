@@ -2,7 +2,6 @@ import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
   stack: { display: 'flex', flexDirection: 'column', gap: { default: 0, [media.tablet]: 28 } },
-  // Labels on the left and controls on the right; one column on narrow screens.
   section: {
     display: 'grid',
     gridTemplateColumns: { default: '220px minmax(0, 1fr)', [media.tablet]: 'minmax(0, 1fr)' },
