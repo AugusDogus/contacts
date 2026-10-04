@@ -1,3 +1,5 @@
+<img src="static/favicon.svg" alt="" width="64" height="64">
+
 # Contacts Exchange
 
 An address book your friends fill in. Send someone a private link, they add their own details, and you export everyone to Google Contacts or a vCard file.
