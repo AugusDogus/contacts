@@ -58,6 +58,12 @@
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.5px;
+    text-wrap: balance;
+  }
+  p,
+  dd,
+  label {
+    text-wrap: pretty;
   }
   h1 {
     font-size: 26px;

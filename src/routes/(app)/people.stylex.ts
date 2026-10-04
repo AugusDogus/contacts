@@ -3,7 +3,13 @@ import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
   actions: { display: 'flex', gap: 8 },
   wideOnly: { display: { default: 'inline', [media.mobile]: 'none' } },
-  quiet: { color: tokens.muted, fontSize: 14, textAlign: 'center', paddingBlock: 24 },
+  quiet: {
+    color: tokens.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    textWrap: 'balance',
+    paddingBlock: 24
+  },
   sectionTitle: {
     fontFamily: tokens.font,
     fontSize: 13,

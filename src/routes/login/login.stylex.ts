@@ -17,7 +17,7 @@ export const styles = stylex.create({
   },
   art: { display: 'flex', justifyContent: 'center', marginBottom: 16 },
   title: { textAlign: 'center', fontSize: 24 },
-  intro: { color: tokens.muted, textAlign: 'center', marginTop: 6 },
+  intro: { color: tokens.muted, textAlign: 'center', textWrap: 'balance', marginTop: 6 },
   methods: { marginTop: 24 },
   divider: {
     display: 'flex',

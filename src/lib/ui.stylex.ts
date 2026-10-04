@@ -165,7 +165,7 @@ export const ui = stylex.create({
     alignItems: 'center',
     gap: 12
   },
-  emptyText: { maxWidth: 360, color: tokens.muted },
+  emptyText: { maxWidth: 360, color: tokens.muted, textWrap: 'balance' },
   emptyIcon: {
     display: 'grid',
     placeItems: 'center',

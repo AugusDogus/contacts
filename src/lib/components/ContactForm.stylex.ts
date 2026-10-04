@@ -49,5 +49,5 @@ export const styles = stylex.create({
     color: tokens.faint
   },
   submit: { display: 'flex', flexDirection: 'column', gap: 10 },
-  saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center' }
+  saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center', textWrap: 'balance' }
 });
