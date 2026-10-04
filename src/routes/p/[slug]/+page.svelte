@@ -5,19 +5,28 @@
   import PublicShell from '#lib/components/PublicShell.svelte';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
+  let name = $derived(data.profile.name);
 </script>
 
 <svelte:head
-  ><title>{data.profile.name} | Contacts Exchange</title><meta
+  ><title>{name}’s address book | Contacts Exchange</title><meta
     name="robots"
     content="noindex, nofollow"
   /></svelte:head
 >
-<PublicShell name={data.profile.name} title={data.profile.name} message={data.profile.message}
+<!-- The owner's note is written for invitees, so it is not shown to people without a link. -->
+<PublicShell
+  {name}
+  title="{name}’s address book"
+  message="{name} adds people with personal links. To share your details, open the one {name} sent you."
   ><div {...stylex.attrs(styles.closed)}>
+    <h2 {...stylex.attrs(styles.pitchTitle)}>Want an address book like this?</h2>
     <p {...stylex.attrs(styles.closedText)}>
-      Ask {data.profile.name} for a personal invitation link.
+      Send friends a link. They fill in their own details, and you can export them anytime.
     </p>
-    <a {...stylex.attrs(ui.button)} href="{data.appUrl}/login">Start your own</a>
+    <a {...stylex.attrs(ui.button, ui.primary)} href="{data.appUrl}/login">Make your own</a>
+    <p {...stylex.attrs(styles.signIn)}>
+      Have one already? <a href="{data.appUrl}/login?signin">Sign in</a>
+    </p>
   </div></PublicShell
 >

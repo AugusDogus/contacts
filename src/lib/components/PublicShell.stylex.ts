@@ -57,5 +57,7 @@ export const styles = stylex.create({
     alignItems: 'center',
     gap: 14
   },
-  closedText: { maxWidth: 380, color: tokens.muted }
+  closedText: { maxWidth: 380, color: tokens.muted },
+  pitchTitle: { fontSize: 17 },
+  signIn: { fontSize: 13, color: tokens.muted }
 });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './login.stylex.ts';
@@ -7,7 +8,7 @@
   import { authClient } from '#lib/auth-client.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
-  let mode = $state<'signup' | 'signin'>('signup');
+  let mode = $state<'signup' | 'signin'>(untrack(() => (data.signIn ? 'signin' : 'signup')));
   let name = $state('');
   let email = $state('');
   let password = $state('');

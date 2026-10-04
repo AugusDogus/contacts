@@ -12,7 +12,7 @@
   ></svelte:head
 >
 <div {...stylex.attrs(styles.shell)}>
-  <header {...stylex.attrs(styles.header)}><Brand /></header>
+  <header {...stylex.attrs(styles.header)}><Brand href={page.data.appUrl || '/'} /></header>
   <main {...stylex.attrs(styles.content, styles.card, styles.closed)}>
     <h1 {...stylex.attrs(styles.title)}>
       {page.status === 404 ? 'Page not found' : 'Something went wrong'}
@@ -20,6 +20,8 @@
     <p {...stylex.attrs(styles.closedText)}>
       {page.error?.message || 'Check the link and try again. Your contacts are safe.'}
     </p>
-    <a {...stylex.attrs(ui.button, ui.primary)} href="/">Go to Contacts Exchange</a>
+    <a {...stylex.attrs(ui.button, ui.primary)} href="{page.data.appUrl ?? ''}/"
+      >Go to Contacts Exchange</a
+    >
   </main>
 </div>
