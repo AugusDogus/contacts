@@ -9,6 +9,7 @@
   import ContactForm from '#lib/components/ContactForm.svelte';
   import Modal from '#lib/components/Modal.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
+  import FormFieldsEditor from '#lib/components/FormFieldsEditor.svelte';
   import { authClient } from '#lib/auth-client.ts';
   import { Contact } from '#lib/contact.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
@@ -123,6 +124,13 @@
         >
       </div>
     </form>
+  </section>
+
+  <section id="form" aria-labelledby="form-title">
+    <div {...stylex.attrs(styles.sectionHead)}>
+      <h2 id="form-title" {...stylex.attrs(styles.title)}>What friends fill in</h2>
+    </div>
+    {#key book.profile.form}<FormFieldsEditor config={book.profile.form} />{/key}
   </section>
 
   <section aria-labelledby="card-title">

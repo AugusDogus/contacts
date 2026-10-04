@@ -72,6 +72,8 @@ export const profiles = sqliteTable('profiles', {
   message: text()
     .notNull()
     .default('I’m getting my address book together. Add your details so we can stay in touch.'),
+  // Required and custom fields. Null until the owner changes them; read with FormConfig.parse.
+  form: text({ mode: 'json' }),
   createdAt: integer().notNull()
 });
 export const invitations = sqliteTable(

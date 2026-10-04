@@ -26,8 +26,10 @@
   let matches = $derived(
     book.contacts
       .filter((contact) => {
-        const { email, phone, city } = contact.data;
-        const text = `${Contact.name(contact.data)} ${email} ${phone} ${city}`.toLowerCase();
+        const { email, phone, city, custom } = contact.data;
+        const answers = custom.map(({ value }) => value).join(' ');
+        const text =
+          `${Contact.name(contact.data)} ${email} ${phone} ${city} ${answers}`.toLowerCase();
         return text.includes(search.trim().toLowerCase());
       })
       .sort((a, b) => Contact.name(a.data).localeCompare(Contact.name(b.data)))

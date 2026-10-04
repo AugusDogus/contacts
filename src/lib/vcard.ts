@@ -45,7 +45,11 @@ export function toVCard(contacts: Contact[]) {
         if (c.birthday) lines.push(`BDAY:${c.birthday}`);
         if (c.company) lines.push(`ORG:${escape(c.company)}`);
         if (c.website) lines.push(`URL:${escape(c.website)}`);
-        const notes = [c.pronouns ? `Pronouns: ${c.pronouns}` : '', c.notes]
+        const notes = [
+          c.pronouns ? `Pronouns: ${c.pronouns}` : '',
+          ...c.custom.map(({ label, value }) => `${label}: ${value}`),
+          c.notes
+        ]
           .filter(Boolean)
           .join('\n');
         if (notes) lines.push(`NOTE:${escape(notes)}`);

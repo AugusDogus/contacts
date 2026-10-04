@@ -6,6 +6,8 @@ import { savedCards } from '#lib/server/schema.ts';
 import { eq } from 'drizzle-orm';
 import { invitationTokenPattern } from '#lib/invitation-token.ts';
 import { invitationUrl } from '#lib/links.ts';
+import { FormConfig } from '#lib/form-config.ts';
+import { contactInput } from '#lib/contact.ts';
 export const load = async ({ params, locals, url, getClientAddress }) => {
   await checkInvitationAccess(db, getClientAddress());
   const book = addressBook(db);
@@ -25,8 +27,10 @@ export const load = async ({ params, locals, url, getClientAddress }) => {
       : null;
   return {
     profile: { name: profile.name, message: profile.message, slug: profile.slug },
+    form: FormConfig.parse(profile.form),
     state: link?.state ?? 'closed',
     token: params.token,
-    savedCard: saved?.data ?? null
+    // Cards saved before newer fields existed are filled in with defaults here.
+    savedCard: saved ? (contactInput.safeParse(saved.data).data ?? null) : null
   };
 };

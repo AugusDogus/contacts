@@ -5,9 +5,10 @@ import { db } from './server/db';
 import { addressBook } from './server/address-book';
 import { requireViewer } from './server/viewer';
 import { contactInput } from './contact';
+import { FormConfig } from './form-config';
 import { googleConfigured } from './server/auth';
 import { and, eq } from 'drizzle-orm';
-import { contacts, savedCards } from './server/schema';
+import { contacts, profiles, savedCards } from './server/schema';
 import { claimCookieDomain } from './server/claim-cookie';
 import { normalizePhoto } from './server/photo';
 
@@ -21,7 +22,14 @@ export const getAddressBook = query(async () => {
     book.openInvitations(viewer.id)
   ]);
   const savedCard = saved ? contactInput.parse(saved.data) : null;
-  return { viewer, profile, contacts: people, invitations: links, googleConfigured, savedCard };
+  return {
+    viewer,
+    profile: { ...profile, form: FormConfig.parse(profile.form) },
+    contacts: people,
+    invitations: links,
+    googleConfigured,
+    savedCard
+  };
 });
 
 const OPEN_LIMIT = 200;
@@ -110,6 +118,12 @@ export const saveProfile = command(
     return result;
   }
 );
+
+export const saveForm = command(FormConfig.schema, async (form) => {
+  await db.update(profiles).set({ form }).where(eq(profiles.ownerId, requireViewer().id));
+  await getAddressBook().refresh();
+  return { ok: true } as const;
+});
 
 export const claimCard = command(async () => {
   const { cookies, locals, url } = getRequestEvent();

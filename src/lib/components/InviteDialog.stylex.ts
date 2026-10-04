@@ -42,6 +42,7 @@ export const styles = stylex.create({
     appearance: 'textfield',
     '::-webkit-inner-spin-button': { appearance: 'none' }
   },
+  asks: { fontSize: 13, color: tokens.muted },
   links: {
     maxHeight: 320,
     overflow: 'auto',

@@ -47,6 +47,7 @@
     ><ContactForm
       initial={data.savedCard ?? undefined}
       recipient={name}
+      config={data.form}
       onsave={async (contact) => {
         const result = await submitContact({
           slug: data.profile.slug,

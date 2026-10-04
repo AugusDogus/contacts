@@ -37,6 +37,9 @@ export function toGooglePerson(contact: ContactInput) {
       : {}),
     ...(contact.company ? { organizations: [{ name: contact.company }] } : {}),
     ...(contact.website ? { urls: [{ value: contact.website }] } : {}),
-    ...(notes ? { biographies: [{ value: notes, contentType: 'TEXT' }] } : {})
+    ...(notes ? { biographies: [{ value: notes, contentType: 'TEXT' }] } : {}),
+    ...(contact.custom.length
+      ? { userDefined: contact.custom.map(({ label, value }) => ({ key: label, value })) }
+      : {})
   };
 }

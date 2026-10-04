@@ -8,9 +8,19 @@
   import Modal from './Modal.svelte';
   import { createInvitations, getAddressBook } from '#lib/contacts.remote.ts';
   import { invitationUrl } from '#lib/links.ts';
+  import { FormConfig } from '#lib/form-config.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
   let { onclose }: { onclose: () => void } = $props();
   let count = $state(1);
+  let form = $derived((await getAddressBook()).profile.form);
+  let asks = $derived(
+    [
+      'name',
+      'email or phone',
+      ...form.required.map((field) => FormConfig.labels[field].toLowerCase()),
+      ...form.custom.filter((field) => field.required).map((field) => field.label)
+    ].join(', ')
+  );
   let label = $state('');
   let busy = $state(false);
   let error = $state('');
@@ -151,6 +161,9 @@
           >
         </div>
       </div>
+      <p {...stylex.attrs(styles.asks)}>
+        Required: {asks}. <a href="/settings#form" onclick={onclose}>Edit</a>
+      </p>
       {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
       <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={busy}
         >{busy ? 'Creating…' : count === 1 ? 'Create link' : `Create ${count} links`}</button

@@ -40,6 +40,14 @@ export const styles = stylex.create({
     textTransform: 'uppercase',
     color: tokens.faint
   },
+  required: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: 400,
+    letterSpacing: 0,
+    textTransform: 'none',
+    color: tokens.faint
+  },
   submit: { display: 'flex', flexDirection: 'column', gap: 10 },
   saveNote: { color: tokens.muted, fontSize: 13, textAlign: 'center' }
 });

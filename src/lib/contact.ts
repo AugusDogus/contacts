@@ -13,6 +13,13 @@ export const birthdaySchema = z.string().refine((value) => {
   );
 }, 'Enter a valid birthday in the past.');
 
+const customAnswer = z.object({
+  id: z.string().max(40),
+  label: text(40),
+  value: text(200)
+});
+export type CustomAnswer = z.infer<typeof customAnswer>;
+
 export const contactInput = z
   .object({
     firstName: text(80).min(1, 'Add your first name.'),
@@ -44,7 +51,9 @@ export const contactInput = z
       .refine(
         (value) => !value || /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(value),
         'Choose a JPEG, PNG, or WebP photo under 500 KB.'
-      )
+      ),
+    // Answers to an owner's custom fields. Cards saved before these existed have none.
+    custom: z.array(customAnswer).max(10).default([])
   })
   .refine((value) => Boolean(value.email || value.phone), {
     message: 'Add an email address or phone number so your friend can reach you.',
@@ -80,7 +89,8 @@ export const Contact = {
     company: '',
     website: '',
     notes: '',
-    photo: ''
+    photo: '',
+    custom: []
   }),
   name: (contact: ContactInput) => `${contact.firstName} ${contact.lastName}`,
   initials: (contact: ContactInput) =>

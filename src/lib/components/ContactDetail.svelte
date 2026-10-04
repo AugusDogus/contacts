@@ -87,6 +87,10 @@
           <a href={data.website} target="_blank" rel="noopener noreferrer">{data.website}</a>
         </dd>
       </div>{/if}
+    {#each data.custom as answer (answer.id)}<div {...stylex.attrs(styles.row)}>
+        <dt {...stylex.attrs(styles.term)}>{answer.label}</dt>
+        <dd {...stylex.attrs(styles.value)}>{answer.value}</dd>
+      </div>{/each}
     {#if data.notes}<div {...stylex.attrs(styles.row)}>
         <dt {...stylex.attrs(styles.term)}>Notes</dt>
         <dd {...stylex.attrs(styles.value, styles.lines)}>{data.notes}</dd>

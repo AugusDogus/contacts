@@ -4,21 +4,32 @@
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ContactForm.stylex.ts';
   import { Contact, contactInput, type ContactInput } from '#lib/contact.ts';
+  import { FormConfig } from '#lib/form-config.ts';
   import { Camera } from '@lucide/svelte';
   import Avatar from './Avatar.svelte';
   type Result = { ok: true } | { ok: false; message: string };
   let {
     initial = Contact.empty(),
     recipient,
+    config,
     buttonLabel = 'Save',
     onsave
   }: {
     initial?: ContactInput;
     recipient?: string;
+    /** The owner's requirements. Omitted when people edit their own saved card. */
+    config?: FormConfig;
     buttonLabel?: string;
     onsave: (contact: ContactInput) => Promise<Result>;
   } = $props();
-  let value = $state<ContactInput>(untrack(() => ({ ...initial })));
+  let value = $state<ContactInput>(
+    untrack(() => ({
+      ...initial,
+      custom: config ? FormConfig.prefill(config, initial) : initial.custom
+    }))
+  );
+  const req = (field: Exclude<keyof ContactInput, 'custom'>) =>
+    Boolean(config && FormConfig.requires(config, field));
   let busy = $state(false);
   let photoBusy = $state(false);
   let error = $state('');
@@ -77,6 +88,18 @@
       if (field instanceof HTMLElement) field.focus();
       return;
     }
+    if (config) {
+      const missing = FormConfig.missing(config, {
+        ...parsed.data,
+        custom: FormConfig.answers(config, parsed.data.custom)
+      });
+      if (missing) {
+        error = missing.message;
+        const field = form.elements.namedItem(missing.field);
+        if (field instanceof HTMLElement) field.focus();
+        return;
+      }
+    }
     busy = true;
     try {
       const result = await onsave(parsed.data);
@@ -92,6 +115,10 @@
   }
 </script>
 
+{#snippet mark(required: boolean)}{#if required}<span {...stylex.attrs(styles.required)}
+      >required</span
+    >{/if}{/snippet}
+
 <form
   method="POST"
   {...stylex.attrs(styles.form)}
@@ -105,9 +132,12 @@
       >{#if value.photo}<Avatar person={value} size={56} />{:else}<span
           {...stylex.attrs(styles.photoPlaceholder)}><Camera size={20} strokeWidth={1.6} /></span
         >{/if}<span {...stylex.attrs(styles.photoText)}
-        >{photoBusy ? 'Preparing…' : value.photo ? 'Change photo' : 'Add a photo'}</span
+        >{photoBusy ? 'Preparing…' : value.photo ? 'Change photo' : 'Add a photo'}{@render mark(
+          req('photo')
+        )}</span
       ><input
         {...stylex.attrs(ui.srOnly)}
+        name="photo"
         type="file"
         accept="image/jpeg,image/png,image/webp"
         onchange={(event) => void photo(event.currentTarget.files?.[0])}
@@ -139,18 +169,20 @@
         maxlength="80"
       /></label
     ><label
-      >Email<input
+      >Email{@render mark(req('email'))}<input
         {...stylex.attrs(ui.input)}
         name="email"
+        required={req('email')}
         type="email"
         autocomplete="email"
         bind:value={value.email}
         maxlength="254"
       /></label
     ><label
-      >Phone<input
+      >Phone{@render mark(req('phone'))}<input
         {...stylex.attrs(ui.input)}
         name="phone"
+        required={req('phone')}
         type="tel"
         autocomplete="tel"
         bind:value={value.phone}
@@ -159,12 +191,13 @@
     >
   </div>
   <fieldset {...stylex.attrs(styles.section)}>
-    <legend {...stylex.attrs(styles.sectionTitle)}>Address</legend>
+    <legend {...stylex.attrs(styles.sectionTitle)}>Address{@render mark(req('street'))}</legend>
     <div {...stylex.attrs(ui.formGrid)}>
       <label {...stylex.attrs(ui.span2)}
         >Street<input
           {...stylex.attrs(ui.input)}
           name="street"
+          required={req('street')}
           autocomplete="street-address"
           bind:value={value.street}
           maxlength="200"
@@ -173,6 +206,7 @@
         >City<input
           {...stylex.attrs(ui.input)}
           name="city"
+          required={req('city')}
           autocomplete="address-level2"
           bind:value={value.city}
           maxlength="100"
@@ -181,6 +215,7 @@
         >State or region<input
           {...stylex.attrs(ui.input)}
           name="region"
+          required={req('region')}
           autocomplete="address-level1"
           bind:value={value.region}
           maxlength="100"
@@ -189,6 +224,7 @@
         >Postal code<input
           {...stylex.attrs(ui.input)}
           name="postalCode"
+          required={req('postalCode')}
           autocomplete="postal-code"
           bind:value={value.postalCode}
           maxlength="30"
@@ -197,6 +233,7 @@
         >Country<input
           {...stylex.attrs(ui.input)}
           name="country"
+          required={req('country')}
           autocomplete="country-name"
           bind:value={value.country}
           maxlength="100"
@@ -207,10 +244,22 @@
   <fieldset {...stylex.attrs(styles.section)}>
     <legend {...stylex.attrs(styles.sectionTitle)}>More</legend>
     <div {...stylex.attrs(ui.formGrid)}>
+      {#each value.custom as answer (answer.id)}{@const required = Boolean(
+          config?.custom.find((field) => field.id === answer.id)?.required
+        )}<label {...stylex.attrs(ui.span2)}
+          >{answer.label}{@render mark(required)}<input
+            {...stylex.attrs(ui.input)}
+            name="custom-{answer.id}"
+            {required}
+            bind:value={answer.value}
+            maxlength="200"
+          /></label
+        >{/each}
       <label
-        >Birthday<input
+        >Birthday{@render mark(req('birthday'))}<input
           {...stylex.attrs(ui.input)}
           name="birthday"
+          required={req('birthday')}
           type="date"
           min="1900-01-01"
           max={new Date().toISOString().slice(0, 10)}
@@ -218,24 +267,27 @@
           bind:value={value.birthday}
         /></label
       ><label
-        >Pronouns<input
+        >Pronouns{@render mark(req('pronouns'))}<input
           {...stylex.attrs(ui.input)}
           name="pronouns"
+          required={req('pronouns')}
           bind:value={value.pronouns}
           maxlength="60"
         /></label
       ><label
-        >Company<input
+        >Company{@render mark(req('company'))}<input
           {...stylex.attrs(ui.input)}
           name="company"
+          required={req('company')}
           autocomplete="organization"
           bind:value={value.company}
           maxlength="100"
         /></label
       ><label
-        >Website<input
+        >Website{@render mark(req('website'))}<input
           {...stylex.attrs(ui.input)}
           name="website"
+          required={req('website')}
           type="url"
           autocomplete="url"
           bind:value={value.website}
@@ -243,9 +295,10 @@
           placeholder="https://"
         /></label
       ><label {...stylex.attrs(ui.span2)}
-        >Notes<textarea
+        >Notes{@render mark(req('notes'))}<textarea
           {...stylex.attrs(ui.input)}
           name="notes"
+          required={req('notes')}
           bind:value={value.notes}
           maxlength="2000"
           rows="2"></textarea></label
