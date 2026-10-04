@@ -11,7 +11,6 @@ test('exports structured fields and escapes injected vCard properties', () => {
       invitationId: null,
       linkedUserId: null,
       createdAt: 0,
-      favorite: false,
       source: null,
       data: {
         ...Contact.empty(),
@@ -38,7 +37,6 @@ test('folds UTF-8 without breaking characters and roundtrips long notes', () => 
       invitationId: null,
       linkedUserId: null,
       createdAt: 0,
-      favorite: false,
       source: null,
       data: { ...Contact.empty(), firstName: 'A', lastName: 'B', email: 'a@example.com', notes }
     }
@@ -59,7 +57,6 @@ test('exports custom answers in the note so every contacts app keeps them', () =
       invitationId: null,
       linkedUserId: null,
       createdAt: 0,
-      favorite: false,
       source: null,
       data: {
         ...Contact.empty(),

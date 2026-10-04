@@ -2,7 +2,7 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './people.stylex.ts';
-  import { Download, Plus, Search, Star } from '@lucide/svelte';
+  import { Download, Plus, Search } from '@lucide/svelte';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { Contact } from '#lib/contact.ts';
   import Avatar from '#lib/components/Avatar.svelte';
@@ -34,15 +34,6 @@
       })
       .sort((a, b) => Contact.name(a.data).localeCompare(Contact.name(b.data)))
   );
-  let groups = $derived(
-    search.trim()
-      ? [{ title: '', contacts: matches }]
-      : [
-          { title: 'Favorites', contacts: matches.filter((contact) => contact.favorite) },
-          { title: 'Everyone', contacts: matches.filter((contact) => !contact.favorite) }
-        ].filter((group) => group.contacts.length)
-  );
-  let showTitles = $derived(groups.length > 1);
   const when = (days: number, birthday: string) =>
     days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : Contact.birthdayLabel(birthday);
 </script>
@@ -109,31 +100,23 @@
     </section>{/if}
 
   <section {...stylex.attrs(ui.panel)} aria-label="Contacts">
-    {#if matches.length}{#each groups as group (group.title)}
-        {#if showTitles}<h3 {...stylex.attrs(styles.groupTitle)}>{group.title}</h3>{/if}
-        <ul {...stylex.attrs(styles.list)}>
-          {#each group.contacts as contact (contact.id)}<li {...stylex.attrs(styles.item)}>
-              <button {...stylex.attrs(styles.row)} onclick={() => (selectedId = contact.id)}
-                ><Avatar person={contact.data} size={36} /><span {...stylex.attrs(styles.who)}
-                  ><span {...stylex.attrs(styles.name)}
-                    >{Contact.name(contact.data)}{#if contact.favorite && !showTitles}<span
-                        {...stylex.attrs(styles.favorite)}
-                        ><Star size={12} fill="currentColor" /><span {...stylex.attrs(ui.srOnly)}
-                          >Favorite</span
-                        ></span
-                      >{/if}{#if Date.now() - contact.createdAt < WEEK}<span
-                        {...stylex.attrs(ui.badge, styles.new)}>New</span
-                      >{/if}</span
-                  ><span {...stylex.attrs(styles.secondary)}
-                    >{contact.data.email || contact.data.phone}</span
-                  ></span
-                >{#if contact.data.city}<span {...stylex.attrs(styles.place)}
-                    >{contact.data.city}</span
-                  >{/if}</button
-              >
-            </li>{/each}
-        </ul>
-      {/each}{:else}<div {...stylex.attrs(ui.emptyState)}>
+    {#if matches.length}<ul {...stylex.attrs(styles.list)}>
+        {#each matches as contact (contact.id)}<li {...stylex.attrs(styles.item)}>
+            <button {...stylex.attrs(styles.row)} onclick={() => (selectedId = contact.id)}
+              ><Avatar person={contact.data} size={36} /><span {...stylex.attrs(styles.who)}
+                ><span {...stylex.attrs(styles.name)}
+                  >{Contact.name(contact.data)}{#if Date.now() - contact.createdAt < WEEK}<span
+                      {...stylex.attrs(ui.badge, styles.new)}>New</span
+                    >{/if}</span
+                ><span {...stylex.attrs(styles.secondary)}
+                  >{contact.data.email || contact.data.phone}</span
+                ></span
+              >{#if contact.data.city}<span {...stylex.attrs(styles.place)}
+                  >{contact.data.city}</span
+                >{/if}</button
+            >
+          </li>{/each}
+      </ul>{:else}<div {...stylex.attrs(ui.emptyState)}>
         <p {...stylex.attrs(ui.emptyText)}>No one matches “{search.trim()}”</p>
         <button {...stylex.attrs(ui.textButton)} onclick={() => (search = '')}>Clear search</button>
       </div>{/if}

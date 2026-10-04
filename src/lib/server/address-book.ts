@@ -237,8 +237,7 @@ export function addressBook(db: AppDatabase) {
               linkedUserId: sql<string | null>`NULL`.as('linkedUserId'),
               claimHash: sql<string>`${hash(receipt)}`.as('claimHash'),
               createdAt: sql<number>`${Date.now()}`.as('createdAt'),
-              data: sql<ContactInput>`${JSON.stringify(parsed.data)}`.as('data'),
-              favorite: sql<boolean>`0`.as('favorite')
+              data: sql<ContactInput>`${JSON.stringify(parsed.data)}`.as('data')
             })
             .from(invitations)
             .where(

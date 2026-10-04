@@ -84,17 +84,6 @@ export const renameInvitation = command(
   }
 );
 
-export const setFavorite = command(
-  z.object({ id: z.string(), favorite: z.boolean() }),
-  async ({ id, favorite }) => {
-    await db
-      .update(contacts)
-      .set({ favorite })
-      .where(and(eq(contacts.id, id), eq(contacts.ownerId, requireViewer().id)));
-    await getAddressBook().refresh();
-  }
-);
-
 export const deleteContact = command(z.string(), async (id) => {
   await db
     .delete(contacts)

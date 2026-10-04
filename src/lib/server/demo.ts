@@ -55,8 +55,7 @@ export async function createDemo() {
       id: randomUUID(),
       ownerId: id,
       createdAt: Date.now() - index * 86_400_000,
-      data,
-      favorite: index < 2
+      data
     });
   }
   await book.createInvitations(id, 1, 'Priya');

@@ -2,9 +2,9 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ContactDetail.stylex.ts';
-  import { Download, Star } from '@lucide/svelte';
+  import { Download } from '@lucide/svelte';
   import { Contact } from '#lib/contact.ts';
-  import { deleteContact, setFavorite } from '#lib/contacts.remote.ts';
+  import { deleteContact } from '#lib/contacts.remote.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
   import Modal from './Modal.svelte';
   import Avatar from './Avatar.svelte';
@@ -50,17 +50,6 @@
     <p {...stylex.attrs(styles.topText)}>
       {[data.pronouns, data.company].filter(Boolean).join(' · ')}
     </p>
-    <button
-      {...stylex.attrs(ui.button, ui.small, contact.favorite && styles.favoriteOn)}
-      aria-pressed={contact.favorite}
-      onclick={async () => {
-        try {
-          await setFavorite({ id: contact.id, favorite: !contact.favorite });
-        } catch (cause) {
-          failure(cause);
-        }
-      }}><Star size={14} fill={contact.favorite ? 'currentColor' : 'none'} />Favorite</button
-    >
   </div>
   <dl {...stylex.attrs(styles.details)}>
     {#if data.email}<div {...stylex.attrs(styles.row)}>

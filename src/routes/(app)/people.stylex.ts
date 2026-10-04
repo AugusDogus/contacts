@@ -18,19 +18,6 @@ export const styles = stylex.create({
     color: tokens.muted,
     marginBottom: 8
   },
-  groupTitle: {
-    fontFamily: tokens.font,
-    fontSize: 12,
-    fontWeight: 600,
-    letterSpacing: 0,
-    color: tokens.faint,
-    paddingTop: 10,
-    paddingBottom: 4,
-    paddingInline: { default: 16, [media.mobile]: 14 },
-    borderTopWidth: { default: 1, ':first-child': 0 },
-    borderTopStyle: 'solid',
-    borderTopColor: tokens.line
-  },
   new: { color: tokens.blue, backgroundColor: tokens.blueSoft, paddingBlock: 0, paddingInline: 7 },
   birthdays: {
     display: 'flex',
@@ -118,7 +105,6 @@ export const styles = stylex.create({
   },
   who: { display: 'flex', flexDirection: 'column', flexGrow: 1, minWidth: 0, lineHeight: 1.35 },
   name: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 500, color: tokens.ink },
-  favorite: { display: 'flex', color: '#d4a12a' },
   secondary: {
     fontSize: 13,
     color: tokens.muted,

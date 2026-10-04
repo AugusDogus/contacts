@@ -107,8 +107,7 @@ export const contacts = sqliteTable(
     linkedUserId: text(),
     claimHash: text().unique(),
     createdAt: integer().notNull(),
-    data: text({ mode: 'json' }).$type<ContactInput>().notNull(),
-    favorite: integer({ mode: 'boolean' }).notNull().default(false)
+    data: text({ mode: 'json' }).$type<ContactInput>().notNull()
   },
   (t) => [index('contacts_owner').on(t.ownerId)]
 );
