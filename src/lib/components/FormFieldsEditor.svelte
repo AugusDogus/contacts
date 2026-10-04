@@ -46,8 +46,15 @@
 >
   <div>
     <p {...stylex.attrs(styles.label)} id="required-fields">Required</p>
-    <p {...stylex.attrs(styles.help)}>A name and an email or phone are always required.</p>
+    <p {...stylex.attrs(styles.help)}>An email or phone is always required.</p>
     <div {...stylex.attrs(styles.chips)} role="group" aria-labelledby="required-fields">
+      {#each ['First name', 'Last name'] as field (field)}<button
+          type="button"
+          {...stylex.attrs(styles.chip, styles.chipOn, styles.chipLocked)}
+          aria-pressed="true"
+          disabled
+          title="Always required"><Check size={13} strokeWidth={2.5} />{field}</button
+        >{/each}
       {#each requirableFields as field (field)}{@const on = draft.required.includes(field)}<button
           type="button"
           {...stylex.attrs(styles.chip, on && styles.chipOn)}

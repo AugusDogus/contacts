@@ -151,7 +151,7 @@
   </div>
   <div {...stylex.attrs(ui.formGrid)}>
     <label
-      >First name<input
+      >First name{@render mark(true)}<input
         {...stylex.attrs(ui.input)}
         name="firstName"
         autocomplete="given-name"
@@ -160,7 +160,7 @@
         maxlength="80"
       /></label
     ><label
-      >Last name<input
+      >Last name{@render mark(true)}<input
         {...stylex.attrs(ui.input)}
         name="lastName"
         autocomplete="family-name"

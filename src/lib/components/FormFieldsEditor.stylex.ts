@@ -33,6 +33,7 @@ export const styles = stylex.create({
     borderColor: tokens.ink,
     color: tokens.paper
   },
+  chipLocked: { opacity: 0.55, cursor: 'default', transform: 'none' },
   customList: {
     listStyle: 'none',
     margin: 0,
