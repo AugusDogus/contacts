@@ -1,21 +1,102 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Contact } from '../contact';
-import { toGooglePerson } from '../google-person';
+import { GooglePerson, type Conflict } from '../google-person';
 import type { AppDatabase } from './db';
 import { googleImports } from './schema';
 
+type Request = (url: string, init: RequestInit) => Promise<Response>;
 export type ImportResult =
-  | { status: 'imported'; photoSkipped: boolean }
+  | { status: 'imported'; photoSkipped: boolean; person: GooglePerson }
+  | { status: 'merged'; photoSkipped: boolean; conflicts: Conflict[]; person: GooglePerson }
   | { status: 'skipped' }
   | { status: 'failed'; message: string };
 
+const api = 'https://people.googleapis.com/v1';
+const personFields =
+  'names,emailAddresses,phoneNumbers,addresses,birthdays,organizations,urls,biographies,userDefined,photos';
+const headers = (token: string) => ({
+  Authorization: `Bearer ${token}`,
+  'Content-Type': 'application/json'
+});
+const deniedMessage =
+  'Google denied access. Reconnect your Google account and grant Contacts access, then try again. Your contacts are still saved here.';
+
+/** Every contact in the signed-in Google account, so cards can be matched before adding. */
+export async function listGooglePeople(
+  token: string,
+  request: Request = fetch
+): Promise<{ ok: true; people: GooglePerson[] } | { ok: false; message: string }> {
+  const people: GooglePerson[] = [];
+  let pageToken = '';
+  do {
+    const url = `${api}/people/me/connections?personFields=${personFields}&pageSize=1000${pageToken ? `&pageToken=${pageToken}` : ''}`;
+    let response: Response;
+    try {
+      response = await request(url, {
+        headers: headers(token),
+        signal: AbortSignal.timeout(8_000)
+      });
+    } catch {
+      return {
+        ok: false,
+        message:
+          'Couldn’t reach Google to check for existing contacts. Nothing was added. Try again.'
+      };
+    }
+    if (!response.ok)
+      return {
+        ok: false,
+        message:
+          response.status === 401 || response.status === 403
+            ? deniedMessage
+            : `Google couldn’t list your contacts (HTTP ${response.status}). Nothing was added. Try again.`
+      };
+    const page = z
+      .object({
+        connections: z.array(z.unknown()).optional(),
+        nextPageToken: z.string().optional()
+      })
+      .safeParse(await response.json().catch(() => null));
+    if (!page.success)
+      return {
+        ok: false,
+        message: 'Google returned an unreadable contact list. Nothing was added. Try again.'
+      };
+    for (const entry of page.data.connections ?? []) {
+      const person = GooglePerson.schema.safeParse(entry);
+      if (person.success) people.push(person.data);
+    }
+    pageToken = page.data.nextPageToken ?? '';
+  } while (pageToken);
+  return { ok: true, people };
+}
+
+async function uploadPhoto(resourceName: string, photo: string, token: string, request: Request) {
+  try {
+    const response = await request(`${api}/${resourceName}:updateContactPhoto`, {
+      method: 'PATCH',
+      headers: headers(token),
+      body: JSON.stringify({ photoBytes: photo.split(',')[1] }),
+      signal: AbortSignal.timeout(5_000)
+    });
+    return !response.ok;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Adds a card to Google, or fills in the matching Google contact without overwriting it.
+ * `people` is the account's current contacts; callers should apply returned people to it.
+ */
 export async function importGoogleContact(
   db: AppDatabase,
   contact: Contact,
   accountId: string,
-  accessToken: string,
-  request: (url: string, init: RequestInit) => Promise<Response> = fetch
+  token: string,
+  people: GooglePerson[],
+  request: Request = fetch
 ): Promise<ImportResult> {
   const key = and(eq(googleImports.contactId, contact.id), eq(googleImports.accountId, accountId));
   const reservation = await db
@@ -24,12 +105,78 @@ export async function importGoogleContact(
     .onConflictDoNothing()
     .returning();
   if (!reservation.length) return { status: 'skipped' };
+  const existing = GooglePerson.match(contact.data, people);
+  return existing
+    ? mergeInto(existing, db, contact, key, token, request)
+    : create(db, contact, key, token, request);
+}
+
+async function mergeInto(
+  existing: GooglePerson,
+  db: AppDatabase,
+  contact: Contact,
+  key: ReturnType<typeof and>,
+  token: string,
+  request: Request
+): Promise<ImportResult> {
+  const plan = GooglePerson.merge(contact.data, existing);
+  let person = existing;
+  if (plan.fields.length) {
+    // Filling empty fields is repeatable, so any failure can safely be retried.
+    let response: Response | null = null;
+    try {
+      response = await request(
+        `${api}/${existing.resourceName}:updateContact?updatePersonFields=${plan.fields.join(',')}&personFields=${personFields}`,
+        {
+          method: 'PATCH',
+          headers: headers(token),
+          body: JSON.stringify(plan.update),
+          signal: AbortSignal.timeout(8_000)
+        }
+      );
+    } catch {
+      response = null;
+    }
+    const updated = response?.ok
+      ? GooglePerson.schema.safeParse(await response.json().catch(() => null))
+      : null;
+    if (!updated?.success) {
+      await db.delete(googleImports).where(key);
+      return {
+        status: 'failed',
+        message:
+          response?.status === 401 || response?.status === 403
+            ? deniedMessage
+            : response?.status === 429
+              ? 'Google is receiving too many requests. Wait a minute, then try again.'
+              : `Couldn’t update ${contact.data.firstName}’s existing Google contact. Nothing was overwritten. Try again.`
+      };
+    }
+    person = updated.data;
+  }
+  const photoSkipped = plan.addPhoto
+    ? await uploadPhoto(existing.resourceName, contact.data.photo, token, request)
+    : false;
+  await db
+    .update(googleImports)
+    .set({ status: 'merged', resourceName: existing.resourceName, conflicts: plan.conflicts })
+    .where(key);
+  return { status: 'merged', photoSkipped, conflicts: plan.conflicts, person };
+}
+
+async function create(
+  db: AppDatabase,
+  contact: Contact,
+  key: ReturnType<typeof and>,
+  token: string,
+  request: Request
+): Promise<ImportResult> {
   let response: Response;
   try {
-    response = await request('https://people.googleapis.com/v1/people:createContact', {
+    response = await request(`${api}/people:createContact?personFields=${personFields}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(toGooglePerson(contact.data)),
+      headers: headers(token),
+      body: JSON.stringify(GooglePerson.from(contact.data)),
       signal: AbortSignal.timeout(8_000)
     });
   } catch {
@@ -48,21 +195,13 @@ export async function importGoogleContact(
       status: 'failed',
       message:
         response.status === 401 || response.status === 403
-          ? 'Google denied access. Reconnect your Google account and grant Contacts access, then try again. Your contacts are still saved here.'
+          ? deniedMessage
           : response.status === 429
             ? 'Google is receiving too many requests. Wait a minute, then import the remaining contacts.'
             : `Google could not confirm this import (HTTP ${response.status}). Check Google Contacts before trying again. Your original contact is still saved here.`
     };
   }
-  let payload: unknown;
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
-  const parsed = z
-    .object({ resourceName: z.string().regex(/^people\/[A-Za-z0-9_-]+$/) })
-    .safeParse(payload);
+  const parsed = GooglePerson.schema.safeParse(await response.json().catch(() => null));
   if (!parsed.success) {
     await db.update(googleImports).set({ status: 'uncertain' }).where(key);
     return {
@@ -75,22 +214,8 @@ export async function importGoogleContact(
     .update(googleImports)
     .set({ status: 'done', resourceName: parsed.data.resourceName })
     .where(key);
-  let photoSkipped = false;
-  if (contact.data.photo) {
-    try {
-      const photoResponse = await request(
-        `https://people.googleapis.com/v1/${parsed.data.resourceName}:updateContactPhoto`,
-        {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ photoBytes: contact.data.photo.split(',')[1] }),
-          signal: AbortSignal.timeout(5_000)
-        }
-      );
-      photoSkipped = !photoResponse.ok;
-    } catch {
-      photoSkipped = true;
-    }
-  }
-  return { status: 'imported', photoSkipped };
+  const photoSkipped = contact.data.photo
+    ? await uploadPhoto(parsed.data.resourceName, contact.data.photo, token, request)
+    : false;
+  return { status: 'imported', photoSkipped, person: parsed.data };
 }

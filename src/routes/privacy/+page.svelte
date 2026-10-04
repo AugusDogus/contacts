@@ -13,7 +13,7 @@
   <main {...stylex.attrs(styles.content)}>
     <h1>Privacy</h1>
     <p>
-      Updated October 3, 2026. For privacy questions or deletion requests, contact <a
+      Updated October 4, 2026. For privacy questions or deletion requests, contact <a
         {...stylex.attrs(styles.link)}
         href="mailto:augie@contacts.exchange">augie@contacts.exchange</a
       >.
@@ -57,15 +57,19 @@
       <h2>Google account access</h2>
       <p>
         Basic Google sign-in uses your identity information. Connecting Google Contacts separately
-        requests permission to manage contacts because Google requires that scope to create contacts
-        and add their photos. The app uses this permission only to add cards when you request an
-        export. It does not read, delete, or modify your existing Google contacts.
+        requests permission to manage contacts. The app uses this permission only when you request
+        an export. To avoid duplicates, it then reads your Google contacts and matches each card by
+        email, phone number, or name. Unmatched cards are added as new contacts. For a match, the
+        app adds only details the Google contact is missing, such as an address, birthday, or photo.
+        It never overwrites or deletes existing details or contacts.
       </p>
       <p>
         We store encrypted Google access and refresh tokens to maintain your connection, along with
-        identifiers and export status for contacts created through the app to avoid repeating
-        exports. We do not sell Google user data, use it for advertising, or use it to train AI
-        models.
+        identifiers and export status for contacts the app created or updated, to avoid repeating
+        exports. When a matched Google contact has a different value for a detail, we store that
+        detail from both versions so you can review it, until you dismiss it. Other information read
+        from Google is used only during the export and is not stored. We do not sell Google user
+        data, use it for advertising, or use it to train AI models.
       </p>
       <p>
         Contacts Exchange’s use and transfer of information received from Google APIs adheres to the <a

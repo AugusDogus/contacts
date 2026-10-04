@@ -30,8 +30,9 @@
       <h2>Take your contacts with you</h2>
       <p>
         Download a vCard file for your address book, or connect Google Contacts and choose when to
-        add your collected contacts. Google sign-in and permission to add contacts are separate
-        choices. Contacts Exchange does not read your existing Google address book.
+        add your collected contacts. Cards that match an existing Google contact fill in its missing
+        details instead of creating a duplicate. Google sign-in and Contacts access are separate
+        choices.
       </p>
     </section>
     <div>
