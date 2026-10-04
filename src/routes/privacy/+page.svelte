@@ -12,8 +12,7 @@
   <main {...stylex.attrs(styles.content)}>
     <h1>Privacy</h1>
     <p>
-      Updated October 3, 2026. For privacy
-      questions or deletion requests, contact <a
+      Updated October 3, 2026. For privacy questions or deletion requests, contact <a
         {...stylex.attrs(styles.link)}
         href="mailto:augie@contacts.exchange">augie@contacts.exchange</a
       >.

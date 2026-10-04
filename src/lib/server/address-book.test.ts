@@ -29,6 +29,21 @@ async function setup() {
   return { db, book, owner, other, invite, contact };
 }
 describe('private invitations', () => {
+  test('does not publish an account surname in the default profile or address', async () => {
+    const { book } = await setup();
+    const profile = await book.ensureProfile('new-owner', 'Taylor Morgan');
+    expect(profile.name).toBe('Taylor');
+    expect(profile.slug).toMatch(/^taylor-[a-f0-9]{8}$/);
+    expect((await book.publicProfile(profile.slug))?.name).toBe('Taylor');
+    await book.saveProfile(profile.ownerId, {
+      name: 'My chosen name',
+      slug: 'my-chosen-page',
+      message: ''
+    });
+    expect((await book.ensureProfile(profile.ownerId, 'Taylor Morgan')).name).toBe(
+      'My chosen name'
+    );
+  });
   test('creates short tokens containing the searchable invitation reference', async () => {
     const { invite } = await setup();
     expect(invite.token).toMatch(/^[A-Za-z0-9_-]{7}$/);

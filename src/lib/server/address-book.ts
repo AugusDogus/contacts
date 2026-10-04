@@ -33,8 +33,10 @@ export function addressBook(db: AppDatabase) {
   async function ensureProfile(ownerId: string, name: string) {
     const existing = await profile(ownerId);
     if (existing) return existing;
+    // Account names can include surnames that the owner has not chosen to publish.
+    const publicName = name.trim().split(/\s+/)[0] || 'Friend';
     const base =
-      name
+      publicName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')
@@ -44,7 +46,7 @@ export function addressBook(db: AppDatabase) {
       .values({
         ownerId,
         slug: `${base}-${randomBytes(4).toString('hex')}`,
-        name,
+        name: publicName,
         createdAt: Date.now()
       })
       .onConflictDoNothing({ target: profiles.ownerId });
