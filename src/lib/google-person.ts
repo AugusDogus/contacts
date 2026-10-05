@@ -8,12 +8,18 @@ export function toGooglePerson(contact: ContactInput) {
     names: [{ givenName: contact.firstName, familyName: contact.lastName }],
     ...(contact.email ? { emailAddresses: [{ value: contact.email, type: 'home' }] } : {}),
     ...(contact.phone ? { phoneNumbers: [{ value: contact.phone, type: 'mobile' }] } : {}),
-    ...(contact.street || contact.city || contact.region || contact.postalCode || contact.country
+    ...(contact.street ||
+    contact.street2 ||
+    contact.city ||
+    contact.region ||
+    contact.postalCode ||
+    contact.country
       ? {
           addresses: [
             {
               type: 'home',
               streetAddress: contact.street,
+              extendedAddress: contact.street2,
               city: contact.city,
               region: contact.region,
               postalCode: contact.postalCode,

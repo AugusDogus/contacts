@@ -15,6 +15,7 @@
   let place = $derived(
     [
       data.street,
+      data.street2,
       [data.city, data.region, data.postalCode].filter(Boolean).join(', '),
       data.country
     ]

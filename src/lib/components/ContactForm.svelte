@@ -1,13 +1,19 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
   import * as stylex from '@stylexjs/stylex';
+  import emailChecker from '@zootools/email-spell-checker';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ContactForm.stylex.ts';
   import { Contact, contactInput, type ContactInput } from '#lib/contact.ts';
   import { FormConfig } from '#lib/form-config.ts';
+  import { Phone } from '#lib/phone.ts';
+  import { Address } from '#lib/address.ts';
   import { Camera } from '@lucide/svelte';
   import Avatar from './Avatar.svelte';
+  import Field from './Field.svelte';
+  import BirthdayPicker from './BirthdayPicker.svelte';
   type Result = { ok: true } | { ok: false; message: string };
+  type TextField = Exclude<keyof ContactInput, 'custom'>;
   let {
     initial = Contact.empty(),
     recipient,
@@ -28,15 +34,31 @@
       custom: config ? FormConfig.prefill(config, initial) : initial.custom
     }))
   );
-  const req = (field: Exclude<keyof ContactInput, 'custom'>) =>
-    Boolean(config && FormConfig.requires(config, field));
+  const req = (field: TextField) => Boolean(config && FormConfig.requires(config, field));
+  const idFor = (field: string) => `contact-${field}`;
   let busy = $state(false);
   let photoBusy = $state(false);
   let error = $state('');
+  // A problem with one field, shown under it.
+  let issue = $state<{ field: string; message: string } | null>(null);
+  const problem = (field: string) => (issue?.field === field ? issue.message : '');
+  // StyleX evaluates stylex.attrs arguments at build time, so pass it plain values, not calls.
+  let photoMissing = $derived(issue?.field === 'photo');
   let ready = $state(false);
+  let region = $state(Phone.region('en-US'));
   onMount(() => {
     ready = true;
+    region = Phone.region(navigator.language);
   });
+  let suggestion = $state('');
+  let countryCode = $derived(Address.code(value.country));
+  let labels = $derived(Address.labels(countryCode));
+  // Keep a country typed before the picker existed selectable.
+  let legacyCountry = $derived(value.country && !countryCode ? value.country : '');
+  function flag(field: string, message: string) {
+    issue = { field, message };
+    document.getElementById(idFor(field))?.focus();
+  }
   async function photo(file: File | undefined) {
     if (!file) return;
     error = '';
@@ -79,26 +101,22 @@
       photoBusy = false;
     }
   }
-  async function save(form: HTMLFormElement) {
+  async function save() {
     error = '';
+    issue = null;
+    if (value.phone && !Phone.isPossible(value.phone, region))
+      return flag('phone', 'This number looks incomplete. Include the area code.');
     const parsed = contactInput.safeParse(value);
     if (!parsed.success) {
-      error = parsed.error.issues[0]?.message || 'Check your details.';
-      const field = form.elements.namedItem(String(parsed.error.issues[0]?.path[0]));
-      if (field instanceof HTMLElement) field.focus();
-      return;
+      const first = parsed.error.issues[0];
+      return flag(String(first?.path[0] ?? 'firstName'), first?.message || 'Check this field.');
     }
     if (config) {
       const missing = FormConfig.missing(config, {
         ...parsed.data,
         custom: FormConfig.answers(config, parsed.data.custom)
       });
-      if (missing) {
-        error = missing.message;
-        const field = form.elements.namedItem(missing.field);
-        if (field instanceof HTMLElement) field.focus();
-        return;
-      }
+      if (missing) return flag(missing.field, missing.message);
     }
     busy = true;
     try {
@@ -115,32 +133,74 @@
   }
 </script>
 
-{#snippet mark(required: boolean)}{#if required}<span {...stylex.attrs(styles.required)}
-      >required</span
-    >{/if}{/snippet}
+{#snippet text(
+  field: TextField,
+  label: string,
+  attrs: Record<string, string | boolean>,
+  options: { required?: boolean; wide?: boolean; stretchOnMobile?: boolean } = {}
+)}
+  <Field
+    id={idFor(field)}
+    {label}
+    required={options.required ?? req(field)}
+    wide={options.wide}
+    stretchOnMobile={options.stretchOnMobile}
+    error={problem(field)}
+  >
+    {#snippet children({ id, invalid, describedby })}
+      <input
+        {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+        {id}
+        name={field}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedby}
+        {...attrs}
+        bind:value={value[field]}
+      />
+    {/snippet}
+  </Field>
+{/snippet}
 
 <form
   method="POST"
+  novalidate
   {...stylex.attrs(styles.form)}
+  oninput={(event) => {
+    const target = event.target;
+    if (
+      (target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement) &&
+      target.name === issue?.field
+    )
+      issue = null;
+  }}
   onsubmit={(event) => {
     event.preventDefault();
-    void save(event.currentTarget);
+    void save();
   }}
 >
   <div {...stylex.attrs(styles.photoRow)}>
     <label {...stylex.attrs(styles.photoPick)}
       >{#if value.photo}<Avatar person={value} size={56} />{:else}<span
-          {...stylex.attrs(styles.photoPlaceholder)}><Camera size={20} strokeWidth={1.6} /></span
+          {...stylex.attrs(styles.photoPlaceholder, photoMissing && styles.photoMissing)}
+          ><Camera size={20} strokeWidth={1.6} /></span
         >{/if}<span {...stylex.attrs(styles.photoText)}
-        >{photoBusy ? 'Preparing…' : value.photo ? 'Change photo' : 'Add a photo'}{@render mark(
-          req('photo')
-        )}</span
+        ><span>{photoBusy ? 'Preparing…' : value.photo ? 'Change photo' : 'Add a photo'}</span
+        >{#if req('photo')}<span {...stylex.attrs(styles.required)}>required</span
+          >{/if}{#if problem('photo')}<span {...stylex.attrs(styles.photoError)}
+            >{problem('photo')}</span
+          >{/if}</span
       ><input
         {...stylex.attrs(ui.srOnly)}
+        id={idFor('photo')}
         name="photo"
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        onchange={(event) => void photo(event.currentTarget.files?.[0])}
+        onchange={(event) => {
+          issue = null;
+          void photo(event.currentTarget.files?.[0]);
+        }}
         disabled={busy || photoBusy}
       /></label
     >{#if value.photo}<button
@@ -150,159 +210,210 @@
       >{/if}
   </div>
   <div {...stylex.attrs(ui.formGrid)}>
-    <label
-      >First name{@render mark(true)}<input
-        {...stylex.attrs(ui.input)}
-        name="firstName"
-        autocomplete="given-name"
-        bind:value={value.firstName}
-        required
-        maxlength="80"
-      /></label
-    ><label
-      >Last name{@render mark(true)}<input
-        {...stylex.attrs(ui.input)}
-        name="lastName"
-        autocomplete="family-name"
-        bind:value={value.lastName}
-        required
-        maxlength="80"
-      /></label
-    ><label
-      >Email{@render mark(req('email'))}<input
-        {...stylex.attrs(ui.input)}
-        name="email"
-        required={req('email')}
-        type="email"
-        autocomplete="email"
-        bind:value={value.email}
-        maxlength="254"
-      /></label
-    ><label
-      >Phone{@render mark(req('phone'))}<input
-        {...stylex.attrs(ui.input)}
-        name="phone"
-        required={req('phone')}
-        type="tel"
-        autocomplete="tel"
-        bind:value={value.phone}
-        maxlength="40"
-      /></label
-    >
+    {@render text(
+      'firstName',
+      'First name',
+      { autocomplete: 'given-name', maxlength: '80' },
+      { required: true }
+    )}
+    {@render text(
+      'lastName',
+      'Last name',
+      { autocomplete: 'family-name', maxlength: '80' },
+      { required: true }
+    )}
+    <Field id={idFor('email')} label="Email" required={req('email')} error={problem('email')}>
+      {#snippet children({ id, invalid, describedby })}
+        <input
+          {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+          {id}
+          name="email"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          autocapitalize="none"
+          spellcheck="false"
+          maxlength="254"
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedby}
+          bind:value={value.email}
+          oninput={() => (suggestion = '')}
+          onblur={() => (suggestion = emailChecker.run({ email: value.email.trim() })?.full ?? '')}
+        />
+      {/snippet}
+      {#snippet after()}{#if suggestion}<p {...stylex.attrs(styles.hint)}>
+            Did you mean <button
+              type="button"
+              {...stylex.attrs(ui.textButton)}
+              onclick={() => {
+                value.email = suggestion;
+                suggestion = '';
+              }}>{suggestion}</button
+            >?
+          </p>{/if}{/snippet}
+    </Field>
+    <Field id={idFor('phone')} label="Phone" required={req('phone')} error={problem('phone')}>
+      {#snippet children({ id, invalid, describedby })}
+        <input
+          {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+          {id}
+          name="phone"
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          maxlength="40"
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedby}
+          bind:value={value.phone}
+          oninput={(event) => {
+            const input = event.currentTarget;
+            // Reformat only while typing at the end, so editing the middle never moves the caret.
+            if (input.selectionStart === input.value.length)
+              value.phone = Phone.format(input.value, region);
+          }}
+        />
+      {/snippet}
+    </Field>
   </div>
   <fieldset {...stylex.attrs(styles.section)}>
-    <legend {...stylex.attrs(styles.sectionTitle)}>Address{@render mark(req('street'))}</legend>
+    <legend {...stylex.attrs(styles.sectionTitle)}
+      >Address{#if req('street')}<span {...stylex.attrs(styles.required)}>required</span
+        >{/if}</legend
+    >
     <div {...stylex.attrs(ui.formGrid)}>
-      <label {...stylex.attrs(ui.span2)}
-        >Street<input
-          {...stylex.attrs(ui.input)}
-          name="street"
-          required={req('street')}
-          autocomplete="street-address"
-          bind:value={value.street}
-          maxlength="200"
-        /></label
-      ><label
-        >City<input
-          {...stylex.attrs(ui.input)}
-          name="city"
-          required={req('city')}
-          autocomplete="address-level2"
-          bind:value={value.city}
-          maxlength="100"
-        /></label
-      ><label
-        >State or region<input
-          {...stylex.attrs(ui.input)}
-          name="region"
-          required={req('region')}
-          autocomplete="address-level1"
-          bind:value={value.region}
-          maxlength="100"
-        /></label
-      ><label
-        >Postal code<input
-          {...stylex.attrs(ui.input)}
-          name="postalCode"
-          required={req('postalCode')}
-          autocomplete="postal-code"
-          bind:value={value.postalCode}
-          maxlength="30"
-        /></label
-      ><label
-        >Country<input
-          {...stylex.attrs(ui.input)}
-          name="country"
-          required={req('country')}
-          autocomplete="country-name"
-          bind:value={value.country}
-          maxlength="100"
-        /></label
+      <Field
+        id={idFor('country')}
+        label="Country"
+        required={req('country')}
+        error={problem('country')}
+        wide
       >
+        {#snippet children({ id, invalid, describedby })}
+          <select
+            {...stylex.attrs(
+              ui.input,
+              styles.control,
+              styles.select,
+              invalid && ui.invalid,
+              !value.country && styles.placeholder
+            )}
+            {id}
+            name="country"
+            autocomplete="country-name"
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedby}
+            bind:value={value.country}
+          >
+            <option value="">Select a country</option>
+            {#if legacyCountry}<option value={legacyCountry}>{legacyCountry}</option>{/if}
+            {#each Address.countries as country (country.code)}<option value={country.name}
+                >{country.name}</option
+              >{/each}
+          </select>
+        {/snippet}
+      </Field>
+      {@render text(
+        'street',
+        'Street address',
+        { autocomplete: 'address-line1', maxlength: '200' },
+        { wide: true }
+      )}
+      {@render text(
+        'street2',
+        'Apartment, suite, or unit',
+        { autocomplete: 'address-line2', maxlength: '200' },
+        { wide: true }
+      )}
+      <div {...stylex.attrs(styles.localityRow)}>
+        {@render text(
+          'city',
+          'City',
+          { autocomplete: 'address-level2', maxlength: '100' },
+          { stretchOnMobile: true }
+        )}
+        {@render text('region', labels.region, {
+          autocomplete: 'address-level1',
+          maxlength: '100'
+        })}
+        {@render text('postalCode', labels.postal, {
+          autocomplete: 'postal-code',
+          maxlength: '30',
+          autocapitalize: 'characters'
+        })}
+      </div>
     </div>
   </fieldset>
   <fieldset {...stylex.attrs(styles.section)}>
     <legend {...stylex.attrs(styles.sectionTitle)}>More</legend>
     <div {...stylex.attrs(ui.formGrid)}>
-      {#each value.custom as answer (answer.id)}{@const required = Boolean(
-          config?.custom.find((field) => field.id === answer.id)?.required
-        )}<label {...stylex.attrs(ui.span2)}
-          >{answer.label}{@render mark(required)}<input
-            {...stylex.attrs(ui.input)}
-            name="custom-{answer.id}"
-            {required}
-            bind:value={answer.value}
-            maxlength="200"
-          /></label
-        >{/each}
-      <label
-        >Birthday{@render mark(req('birthday'))}<input
-          {...stylex.attrs(ui.input)}
-          name="birthday"
-          required={req('birthday')}
-          type="date"
-          min="1900-01-01"
-          max={new Date().toISOString().slice(0, 10)}
-          autocomplete="bday"
-          bind:value={value.birthday}
-        /></label
-      ><label
-        >Pronouns{@render mark(req('pronouns'))}<input
-          {...stylex.attrs(ui.input)}
-          name="pronouns"
-          required={req('pronouns')}
-          bind:value={value.pronouns}
-          maxlength="60"
-        /></label
-      ><label
-        >Company{@render mark(req('company'))}<input
-          {...stylex.attrs(ui.input)}
-          name="company"
-          required={req('company')}
-          autocomplete="organization"
-          bind:value={value.company}
-          maxlength="100"
-        /></label
-      ><label
-        >Website{@render mark(req('website'))}<input
-          {...stylex.attrs(ui.input)}
-          name="website"
-          required={req('website')}
-          type="url"
-          autocomplete="url"
-          bind:value={value.website}
-          maxlength="500"
-          placeholder="https://"
-        /></label
-      ><label {...stylex.attrs(ui.span2)}
-        >Notes{@render mark(req('notes'))}<textarea
-          {...stylex.attrs(ui.input)}
-          name="notes"
-          required={req('notes')}
-          bind:value={value.notes}
-          maxlength="2000"
-          rows="2"></textarea></label
+      {#each value.custom as answer (answer.id)}<Field
+          id={idFor(`custom-${answer.id}`)}
+          label={answer.label}
+          required={Boolean(config?.custom.find((field) => field.id === answer.id)?.required)}
+          error={problem(`custom-${answer.id}`)}
+          wide
+        >
+          {#snippet children({ id, invalid, describedby })}
+            <input
+              {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+              {id}
+              name="custom-{answer.id}"
+              maxlength="200"
+              aria-invalid={invalid || undefined}
+              aria-describedby={describedby}
+              bind:value={answer.value}
+            />
+          {/snippet}
+        </Field>{/each}
+      <Field
+        id={idFor('birthday')}
+        label="Birthday"
+        required={req('birthday')}
+        error={problem('birthday')}
       >
+        {#snippet children({ id, invalid, describedby })}
+          <BirthdayPicker
+            {id}
+            value={value.birthday}
+            {invalid}
+            {describedby}
+            onchange={(next) => {
+              value.birthday = next;
+              if (issue?.field === 'birthday') issue = null;
+            }}
+          />
+        {/snippet}
+      </Field>
+      {@render text('pronouns', 'Pronouns', { maxlength: '60', placeholder: 'e.g. she/her' })}
+      {@render text('company', 'Company', { autocomplete: 'organization', maxlength: '100' })}
+      {@render text('website', 'Website', {
+        type: 'url',
+        inputmode: 'url',
+        autocomplete: 'url',
+        autocapitalize: 'none',
+        spellcheck: false,
+        maxlength: '500',
+        placeholder: 'https://'
+      })}
+      <Field
+        id={idFor('notes')}
+        label="Notes"
+        required={req('notes')}
+        error={problem('notes')}
+        wide
+      >
+        {#snippet children({ id, invalid, describedby })}
+          <textarea
+            {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+            {id}
+            name="notes"
+            maxlength="2000"
+            rows="2"
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedby}
+            bind:value={value.notes}></textarea>
+        {/snippet}
+      </Field>
     </div>
   </fieldset>
   {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}

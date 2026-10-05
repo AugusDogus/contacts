@@ -38,9 +38,9 @@ export function toVCard(contacts: Contact[]) {
         ];
         if (c.email) lines.push(`EMAIL;TYPE=INTERNET:${escape(c.email)}`);
         if (c.phone) lines.push(`TEL;TYPE=CELL:${escape(c.phone)}`);
-        if (c.street || c.city || c.region || c.postalCode || c.country)
+        if (c.street || c.street2 || c.city || c.region || c.postalCode || c.country)
           lines.push(
-            `ADR;TYPE=HOME:;;${[c.street, c.city, c.region, c.postalCode, c.country].map(escape).join(';')}`
+            `ADR;TYPE=HOME:;${[c.street2, c.street, c.city, c.region, c.postalCode, c.country].map(escape).join(';')}`
           );
         if (c.birthday) lines.push(`BDAY:${c.birthday}`);
         if (c.company) lines.push(`ORG:${escape(c.company)}`);

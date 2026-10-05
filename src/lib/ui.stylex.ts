@@ -79,6 +79,7 @@ export const ui = stylex.create({
     outlineOffset: 0,
     transition: 'border-color 150ms ease'
   },
+  invalid: { borderColor: tokens.danger },
   muted: { color: tokens.muted },
   pageHeading: {
     display: 'flex',

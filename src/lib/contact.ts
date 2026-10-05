@@ -24,12 +24,14 @@ export const contactInput = z
   .object({
     firstName: text(80).min(1, 'Add your first name.'),
     lastName: text(80).min(1, 'Add your last name.'),
-    email: z.union([z.literal(''), z.email().max(254)]),
+    email: z.union([z.literal(''), z.email('Enter a valid email address.').max(254)]),
     phone: text(40).refine(
       (value) => !value || /^[+\d\s().\-x#]+$/.test(value),
       'Enter a valid phone number.'
     ),
     street: text(200),
+    // Apartment, suite, or unit. Cards saved before this existed have none.
+    street2: text(200).default(''),
     city: text(100),
     region: text(100),
     postalCode: text(30),
@@ -79,6 +81,7 @@ export const Contact = {
     email: '',
     phone: '',
     street: '',
+    street2: '',
     city: '',
     region: '',
     postalCode: '',

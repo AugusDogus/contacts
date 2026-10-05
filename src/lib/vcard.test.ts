@@ -82,3 +82,30 @@ test('sends custom answers to Google as custom fields', () => {
     toGooglePerson({ ...Contact.empty(), firstName: 'A', lastName: 'B' }).userDefined
   ).toBeUndefined();
 });
+test('exports the apartment line in the vCard and Google extended address slots', () => {
+  const data = {
+    ...Contact.empty(),
+    firstName: 'A',
+    lastName: 'B',
+    email: 'a@example.com',
+    street: '1 Main St',
+    street2: 'Apt 4',
+    city: 'Chicago'
+  };
+  const card = toVCard([
+    {
+      id: 'test',
+      ownerId: 'owner',
+      invitationId: null,
+      linkedUserId: null,
+      createdAt: 0,
+      source: null,
+      data
+    }
+  ]);
+  expect(card).toContain('ADR;TYPE=HOME:;Apt 4;1 Main St;Chicago;;;');
+  expect(toGooglePerson(data).addresses?.[0]).toMatchObject({
+    streetAddress: '1 Main St',
+    extendedAddress: 'Apt 4'
+  });
+});
