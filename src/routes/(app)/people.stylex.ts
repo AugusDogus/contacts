@@ -19,44 +19,6 @@ export const styles = stylex.create({
     marginBottom: 8
   },
   new: { color: tokens.blue, backgroundColor: tokens.blueSoft, paddingBlock: 0, paddingInline: 7 },
-  birthdays: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
-    overflowX: 'auto'
-  },
-  birthdaysTitle: {
-    fontFamily: tokens.font,
-    fontSize: 13,
-    fontWeight: 500,
-    letterSpacing: 0,
-    color: tokens.muted,
-    flexShrink: 0
-  },
-  birthdayList: {
-    display: 'flex',
-    gap: 6,
-    listStyle: 'none',
-    margin: 0,
-    padding: 0
-  },
-  birthday: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 7,
-    paddingBlock: 3,
-    paddingLeft: 3,
-    paddingRight: 10,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: tokens.line,
-    backgroundColor: { default: tokens.paper, [media.hover]: { ':hover': tokens.hover } },
-    color: tokens.ink,
-    fontSize: 13,
-    whiteSpace: 'nowrap'
-  },
   searchBox: {
     display: 'flex',
     alignItems: 'center',

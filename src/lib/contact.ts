@@ -100,14 +100,5 @@ export const Contact = {
           month: 'short',
           day: 'numeric'
         })
-      : '',
-  daysUntilBirthday(birthday: string, now = new Date()): number {
-    if (!birthday) return Infinity;
-    const month = Number(birthday.slice(5, 7)) - 1;
-    const day = Number(birthday.slice(8, 10));
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    let next = new Date(now.getFullYear(), month, day);
-    if (next < today) next = new Date(now.getFullYear() + 1, month, day);
-    return Math.round((next.getTime() - today.getTime()) / 86_400_000);
-  }
+      : ''
 } as const;

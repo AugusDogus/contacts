@@ -16,13 +16,6 @@
   let inviteOpen = $state(false);
   let selectedId = $state<string | null>(null);
   let selected = $derived(book.contacts.find((contact) => contact.id === selectedId));
-  let upcoming = $derived(
-    book.contacts
-      .map((contact) => ({ contact, days: Contact.daysUntilBirthday(contact.data.birthday) }))
-      .filter(({ days }) => days <= 30)
-      .sort((a, b) => a.days - b.days)
-      .slice(0, 4)
-  );
   let matches = $derived(
     book.contacts
       .filter((contact) => {
@@ -34,8 +27,6 @@
       })
       .sort((a, b) => Contact.name(a.data).localeCompare(Contact.name(b.data)))
   );
-  const when = (days: number, birthday: string) =>
-    days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : Contact.birthdayLabel(birthday);
 </script>
 
 <svelte:head><title>People | Contacts Exchange</title></svelte:head>
@@ -81,23 +72,6 @@
         bind:value={search}
       /></label
     >{/if}
-
-  {#if upcoming.length && !search.trim()}<section
-      {...stylex.attrs(styles.birthdays)}
-      aria-labelledby="birthdays"
-    >
-      <h3 id="birthdays" {...stylex.attrs(styles.birthdaysTitle)}>Birthdays</h3>
-      <ul {...stylex.attrs(styles.birthdayList)}>
-        {#each upcoming as { contact, days } (contact.id)}<li>
-            <button {...stylex.attrs(styles.birthday)} onclick={() => (selectedId = contact.id)}
-              ><Avatar person={contact.data} size={22} /><span
-                >{contact.data.firstName}
-                <span {...stylex.attrs(ui.muted)}>{when(days, contact.data.birthday)}</span></span
-              ></button
-            >
-          </li>{/each}
-      </ul>
-    </section>{/if}
 
   <section {...stylex.attrs(ui.panel)} aria-label="Contacts">
     {#if matches.length}<ul {...stylex.attrs(styles.list)}>
