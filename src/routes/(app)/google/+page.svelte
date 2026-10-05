@@ -2,11 +2,13 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './google.stylex.ts';
-  import { ArrowLeft, Download, ExternalLink, FileText } from '@lucide/svelte';
-  import { dismissConflicts, getGoogleConnection, importToGoogle } from '#lib/google.remote.ts';
+  import { ArrowLeft, Download, FileText } from '@lucide/svelte';
+  import { getGoogleConnection, importToGoogle, previewExport } from '#lib/google.remote.ts';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { authClient } from '#lib/auth-client.ts';
-  import { failure, notify } from '#lib/notice.svelte.ts';
+  import { notify } from '#lib/notice.svelte.ts';
+  import ExportReview from '#lib/components/ExportReview.svelte';
+  import type { Choice, Resolution } from '#lib/google-person.ts';
   import { Contact } from '#lib/contact.ts';
   let book = $derived(await getAddressBook());
   let connection = $derived(await getGoogleConnection());
@@ -22,15 +24,6 @@
   );
   let added = $derived(book.contacts.filter((c) => statusOf(c.id) === 'done').length);
   let updated = $derived(book.contacts.filter((c) => statusOf(c.id) === 'merged').length);
-  // Matched Google contacts that already had different values. Google's values were kept.
-  let review = $derived(
-    book.contacts.flatMap((contact) => {
-      const entry = imports.find((i) => i.contactId === contact.id);
-      return entry?.conflicts?.length && entry.resourceName
-        ? [{ contact, conflicts: entry.conflicts, resourceName: entry.resourceName }]
-        : [];
-    })
-  );
   let summary = $derived(
     !book.contacts.length
       ? 'No contacts yet'
@@ -60,8 +53,41 @@
       busy = false;
     }
   }
-  async function importContacts() {
+  type Review = {
+    items: { contactId: string; name: string; choices: Choice[] }[];
+    created: number;
+    merged: number;
+  };
+  let review = $state<Review | null>(null);
+  // Work out what would change first, and only ask when Google has different details.
+  async function startExport() {
+    busy = true;
+    error = '';
+    total = 0;
+    try {
+      const plan = await previewExport(pending.map((c) => c.id));
+      if (!plan.ok) {
+        error = plan.message;
+        busy = false;
+        return;
+      }
+      if (!plan.review.length) return await run({});
+      review = {
+        created: plan.created,
+        merged: plan.merged,
+        items: plan.review.map(({ contactId, choices }) => {
+          const contact = book.contacts.find((c) => c.id === contactId);
+          return { contactId, name: contact ? Contact.name(contact.data) : '', choices };
+        })
+      };
+    } catch {
+      error = 'Couldn’t check your Google contacts. Nothing was exported. Try again.';
+      busy = false;
+    }
+  }
+  async function run(decisions: Record<string, Record<string, Resolution>>) {
     const ids = pending.map((c) => c.id);
+    review = null;
     busy = true;
     error = '';
     progress = 0;
@@ -70,7 +96,7 @@
     let merged = 0;
     try {
       for (let i = 0; i < ids.length; i += 3) {
-        const result = await importToGoogle(ids.slice(i, i + 3));
+        const result = await importToGoogle({ ids: ids.slice(i, i + 3), decisions });
         progress += result.imported + result.merged;
         merged += result.merged;
         photoSkipped += result.photoSkipped;
@@ -82,7 +108,7 @@
       const fresh = progress - merged;
       const message = [
         fresh && `added ${fresh} to Google`,
-        merged && `merged ${merged} into existing contacts`,
+        merged && `updated ${merged} existing ${merged === 1 ? 'contact' : 'contacts'}`,
         photoSkipped && `${photoSkipped} photos couldn’t be copied`
       ]
         .filter(Boolean)
@@ -139,8 +165,12 @@
         >{#if pending.length}<button
             {...stylex.attrs(ui.button, ui.small, ui.primary)}
             disabled={busy}
-            onclick={importContacts}
-            >{busy ? `Exporting ${progress}/${total}…` : `Export ${pending.length}`}</button
+            onclick={startExport}
+            >{busy
+              ? total
+                ? `Exporting ${progress}/${total}…`
+                : 'Checking Google…'
+              : `Export ${pending.length}`}</button
           >{/if}
       {:else if connection.status === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
           >Sign up to connect</a
@@ -152,7 +182,7 @@
         >{/if}
     </div>
   </div>
-  {#if error || uncertain.length || review.length}<div {...stylex.attrs(styles.notes)}>
+  {#if error || uncertain.length}<div {...stylex.attrs(styles.notes)}>
       {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
       {#if uncertain.length}<div {...stylex.attrs(styles.uncertain)} role="status">
           <p>
@@ -163,42 +193,6 @@
             {#each uncertain as contact (contact.id)}<li>
                 {contact.data.firstName}
                 {contact.data.lastName}
-              </li>{/each}
-          </ul>
-        </div>{/if}
-      {#if review.length}<div {...stylex.attrs(styles.review)}>
-          <p {...stylex.attrs(styles.reviewTitle)}>
-            Merged into existing contacts, but some details differ. Google’s versions were kept.
-          </p>
-          <ul {...stylex.attrs(styles.reviewList)}>
-            {#each review as { contact, conflicts, resourceName } (contact.id)}<li
-                {...stylex.attrs(styles.reviewItem)}
-              >
-                <div {...stylex.attrs(styles.reviewText)}>
-                  <p {...stylex.attrs(styles.reviewName)}>{Contact.name(contact.data)}</p>
-                  {#each conflicts as conflict (conflict.field)}<p
-                      {...stylex.attrs(styles.reviewDetail)}
-                    >
-                      {conflict.field}: Google has {conflict.google}, card says {conflict.card}
-                    </p>{/each}
-                </div>
-                <div {...stylex.attrs(styles.reviewActions)}>
-                  <a
-                    {...stylex.attrs(ui.button, ui.small)}
-                    href="https://contacts.google.com/person/{resourceName.slice('people/'.length)}"
-                    target="_blank"
-                    rel="noopener noreferrer"><ExternalLink size={14} />Open</a
-                  ><button
-                    {...stylex.attrs(ui.button, ui.small)}
-                    onclick={async () => {
-                      try {
-                        await dismissConflicts(contact.id);
-                      } catch (cause) {
-                        failure(cause);
-                      }
-                    }}>Dismiss</button
-                  >
-                </div>
               </li>{/each}
           </ul>
         </div>{/if}
@@ -217,6 +211,16 @@
   </div>
 </section>
 <p {...stylex.attrs(styles.fine)}>
-  Google export matches existing contacts by email, phone, or name. It fills in what’s missing and
-  never overwrites or deletes anything.
+  Google export matches existing contacts by email, phone, or name, fills in what’s missing, and
+  asks before changing anything they already have.
 </p>
+{#if review}<ExportReview
+    items={review.items}
+    created={review.created}
+    merged={review.merged}
+    onconfirm={(decisions) => void run(decisions)}
+    onclose={() => {
+      review = null;
+      busy = false;
+    }}
+  />{/if}

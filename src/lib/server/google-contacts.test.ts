@@ -34,10 +34,24 @@ test('repeated imports create a contact only once per Google account', async () 
     return Response.json({ resourceName: 'people/c123' });
   };
   expect(
-    (await importGoogleContact(db, contact, 'google-account', 'test-token', [], request)).status
+    (
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'test-token', people: [] },
+        request
+      )
+    ).status
   ).toBe('imported');
   expect(
-    (await importGoogleContact(db, contact, 'google-account', 'test-token', [], request)).status
+    (
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'test-token', people: [] },
+        request
+      )
+    ).status
   ).toBe('skipped');
   expect(calls).toBe(1);
 });
@@ -49,10 +63,24 @@ test('uncertain responses cannot silently produce duplicate contacts', async () 
     throw new Error('Simulated lost response after Google accepted the write.');
   };
   expect(
-    (await importGoogleContact(db, contact, 'google-account', 'test-token', [], request)).status
+    (
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'test-token', people: [] },
+        request
+      )
+    ).status
   ).toBe('failed');
   expect(
-    (await importGoogleContact(db, contact, 'google-account', 'test-token', [], request)).status
+    (
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'test-token', people: [] },
+        request
+      )
+    ).status
   ).toBe('skipped');
   expect(calls).toBe(1);
 });
@@ -63,17 +91,18 @@ test('a permission rejection can be retried after reconnecting', async () => {
       await importGoogleContact(
         db,
         contact,
-        'google-account',
-        'test-token',
-        [],
+        { accountId: 'google-account', token: 'test-token', people: [] },
         async () => new Response('', { status: 403 })
       )
     ).status
   ).toBe('failed');
   expect(
     (
-      await importGoogleContact(db, contact, 'google-account', 'test-token', [], async () =>
-        Response.json({ resourceName: 'people/c123' })
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'test-token', people: [] },
+        async () => Response.json({ resourceName: 'people/c123' })
       )
     ).status
   ).toBe('imported');
@@ -93,18 +122,14 @@ test('fills in a matching Google contact instead of creating a duplicate', async
     return Response.json({ ...existing, etag: 'etag-10' });
   };
   const card = { ...contact, data: { ...contact.data, city: 'Chicago', company: 'New Co' } };
-  const result = await importGoogleContact(
-    db,
-    card,
-    'google-account',
-    'token',
-    [existing],
-    request
-  );
-  expect(result).toMatchObject({
-    status: 'merged',
-    conflicts: [{ field: 'Company', google: 'Old Co', card: 'New Co' }]
-  });
+  // Keep Google's company name; the city is new and filled in without asking.
+  const target = {
+    accountId: 'google-account',
+    token: 'token',
+    people: [existing],
+    decisions: { organizations: 'google' as const }
+  };
+  expect(await importGoogleContact(db, card, target, request)).toMatchObject({ status: 'merged' });
   expect(calls).toHaveLength(1);
   expect(calls[0]?.url).toContain('people/c9:updateContact?updatePersonFields=addresses&');
   expect(JSON.parse(String(calls[0]?.init.body))).toMatchObject({ etag: 'etag-9' });
@@ -112,9 +137,28 @@ test('fills in a matching Google contact instead of creating a duplicate', async
     status: 'merged',
     resourceName: 'people/c9'
   });
-  expect(
-    (await importGoogleContact(db, card, 'google-account', 'token', [existing], request)).status
-  ).toBe('skipped');
+  expect((await importGoogleContact(db, card, target, request)).status).toBe('skipped');
+});
+test('replacing a detail with the card’s version is sent to Google', async () => {
+  const { db, contact } = await setup();
+  const bodies: unknown[] = [];
+  const existing = {
+    resourceName: 'people/c9',
+    names: [{ givenName: 'Jamie', familyName: 'Chen' }],
+    emailAddresses: [{ value: 'jamie@example.com' }],
+    organizations: [{ name: 'Old Co' }]
+  };
+  const card = { ...contact, data: { ...contact.data, company: 'New Co' } };
+  await importGoogleContact(
+    db,
+    card,
+    { accountId: 'google-account', token: 'token', people: [existing] },
+    async (_url, init) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return Response.json(existing);
+    }
+  );
+  expect(bodies[0]).toMatchObject({ organizations: [{ name: 'New Co' }] });
 });
 test('a failed update can be retried and never creates a new contact', async () => {
   const { db, contact } = await setup();
@@ -125,7 +169,14 @@ test('a failed update can be retried and never creates a new contact', async () 
     return new Response('', { status: 400 });
   };
   expect(
-    (await importGoogleContact(db, contact, 'google-account', 'token', [existing], failing)).status
+    (
+      await importGoogleContact(
+        db,
+        contact,
+        { accountId: 'google-account', token: 'token', people: [existing] },
+        failing
+      )
+    ).status
   ).toBe('failed');
   expect(urls.every((url) => !url.includes('createContact'))).toBe(true);
   expect(await db.select().from(googleImports)).toHaveLength(0);

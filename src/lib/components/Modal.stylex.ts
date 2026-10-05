@@ -13,6 +13,7 @@ export const styles = stylex.create({
     width: 'min(460px, calc(100vw - 24px))',
     maxHeight: 'calc(100dvh - 48px)',
     color: tokens.ink,
+    outline: 'none',
     boxShadow: '0 0 0 1px #1e23300f, 0 24px 64px #1e233033',
     animationName: { default: pop, [media.reducedMotion]: fade },
     animationDuration: '220ms',

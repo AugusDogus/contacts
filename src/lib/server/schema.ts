@@ -1,6 +1,5 @@
 import { sqliteTable, text, integer, index, primaryKey } from 'drizzle-orm/sqlite-core';
 import type { ContactInput } from '../contact';
-import type { Conflict } from '../google-person';
 
 export const user = sqliteTable('user', {
   id: text().primaryKey(),
@@ -124,9 +123,7 @@ export const googleImports = sqliteTable(
       .references(() => contacts.id, { onDelete: 'cascade' }),
     accountId: text().notNull(),
     status: text({ enum: ['pending', 'done', 'merged', 'uncertain'] }).notNull(),
-    resourceName: text(),
-    // Details a matched Google contact already had with different values. Null for new contacts.
-    conflicts: text({ mode: 'json' }).$type<Conflict[]>()
+    resourceName: text()
   },
   (t) => [primaryKey({ columns: [t.contactId, t.accountId] })]
 );

@@ -1,14 +1,14 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Contact } from '../contact';
-import { GooglePerson, type Conflict } from '../google-person';
+import { GooglePerson, type Decisions } from '../google-person';
 import type { AppDatabase } from './db';
 import { googleImports } from './schema';
 
 type Request = (url: string, init: RequestInit) => Promise<Response>;
 export type ImportResult =
   | { status: 'imported'; photoSkipped: boolean; person: GooglePerson }
-  | { status: 'merged'; photoSkipped: boolean; conflicts: Conflict[]; person: GooglePerson }
+  | { status: 'merged'; photoSkipped: boolean; person: GooglePerson }
   | { status: 'skipped' }
   | { status: 'failed'; message: string };
 
@@ -86,16 +86,20 @@ async function uploadPhoto(resourceName: string, photo: string, token: string, r
   }
 }
 
-/**
- * Adds a card to Google, or fills in the matching Google contact without overwriting it.
- * `people` is the account's current contacts; callers should apply returned people to it.
- */
+type Target = {
+  accountId: string;
+  token: string;
+  /** The account's current contacts. Callers should apply returned people to it. */
+  people: GooglePerson[];
+  /** How to settle details the matching Google contact has with different values. */
+  decisions?: Decisions;
+};
+
+/** Adds a card to Google, or merges it into the matching Google contact. */
 export async function importGoogleContact(
   db: AppDatabase,
   contact: Contact,
-  accountId: string,
-  token: string,
-  people: GooglePerson[],
+  { accountId, token, people, decisions = {} }: Target,
   request: Request = fetch
 ): Promise<ImportResult> {
   const key = and(eq(googleImports.contactId, contact.id), eq(googleImports.accountId, accountId));
@@ -107,22 +111,23 @@ export async function importGoogleContact(
   if (!reservation.length) return { status: 'skipped' };
   const existing = GooglePerson.match(contact.data, people);
   return existing
-    ? mergeInto(existing, db, contact, key, token, request)
+    ? mergeInto(existing, decisions, db, contact, key, token, request)
     : create(db, contact, key, token, request);
 }
 
 async function mergeInto(
   existing: GooglePerson,
+  decisions: Decisions,
   db: AppDatabase,
   contact: Contact,
   key: ReturnType<typeof and>,
   token: string,
   request: Request
 ): Promise<ImportResult> {
-  const plan = GooglePerson.merge(contact.data, existing);
+  const plan = GooglePerson.merge(contact.data, existing, decisions);
   let person = existing;
   if (plan.fields.length) {
-    // Filling empty fields is repeatable, so any failure can safely be retried.
+    // Each write sets fields to fixed values, so any failure can safely be retried.
     let response: Response | null = null;
     try {
       response = await request(
@@ -149,7 +154,7 @@ async function mergeInto(
             ? deniedMessage
             : response?.status === 429
               ? 'Google is receiving too many requests. Wait a minute, then try again.'
-              : `Couldn’t update ${contact.data.firstName}’s existing Google contact. Nothing was overwritten. Try again.`
+              : `Couldn’t update ${contact.data.firstName}’s existing Google contact. It was left unchanged. Try again.`
       };
     }
     person = updated.data;
@@ -159,9 +164,9 @@ async function mergeInto(
     : false;
   await db
     .update(googleImports)
-    .set({ status: 'merged', resourceName: existing.resourceName, conflicts: plan.conflicts })
+    .set({ status: 'merged', resourceName: existing.resourceName })
     .where(key);
-  return { status: 'merged', photoSkipped, conflicts: plan.conflicts, person };
+  return { status: 'merged', photoSkipped, person };
 }
 
 async function create(

@@ -60,16 +60,16 @@
         requests permission to manage contacts. The app uses this permission only when you request
         an export. To avoid duplicates, it then reads your Google contacts and matches each card by
         email, phone number, or name. Unmatched cards are added as new contacts. For a match, the
-        app adds only details the Google contact is missing, such as an address, birthday, or photo.
-        It never overwrites or deletes existing details or contacts.
+        app adds details the Google contact is missing, such as an address, birthday, or photo. If
+        the Google contact has a different value for a detail, the app shows both versions and
+        changes it only as you choose before exporting. It never deletes contacts.
       </p>
       <p>
         We store encrypted Google access and refresh tokens to maintain your connection, along with
         identifiers and export status for contacts the app created or updated, to avoid repeating
-        exports. When a matched Google contact has a different value for a detail, we store that
-        detail from both versions so you can review it, until you dismiss it. Other information read
-        from Google is used only during the export and is not stored. We do not sell Google user
-        data, use it for advertising, or use it to train AI models.
+        exports. Other information read from Google is used only during the export and is not
+        stored. We do not sell Google user data, use it for advertising, or use it to train AI
+        models.
       </p>
       <p>
         Contacts Exchange’s use and transfer of information received from Google APIs adheres to the <a

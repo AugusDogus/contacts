@@ -14,11 +14,14 @@
   let dialog: HTMLDialogElement;
   $effect(() => {
     dialog.showModal();
+    // Without a field asking for focus, focus the dialog rather than ringing the close button.
+    if (!dialog.querySelector('[autofocus]')) dialog.focus();
   });
 </script>
 
 <dialog
   bind:this={dialog}
+  tabindex="-1"
   {...stylex.attrs(styles.dialog, wide && styles.wide)}
   {onclose}
   onclick={(event) => {
