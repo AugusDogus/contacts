@@ -13,7 +13,7 @@
   <main {...stylex.attrs(styles.content)}>
     <h1>Privacy</h1>
     <p>
-      Updated October 4, 2026. For privacy questions or deletion requests, contact <a
+      Updated October 6, 2026. For privacy questions or deletion requests, contact <a
         {...stylex.attrs(styles.link)}
         href="mailto:support@contacts.exchange">support@contacts.exchange</a
       >.
@@ -77,6 +77,23 @@
           href="https://developers.google.com/terms/api-services-user-data-policy"
           >Google API Services User Data Policy</a
         >, including its Limited Use requirements.
+      </p>
+    </section>
+    <section {...stylex.attrs(styles.section)}>
+      <h2>How we protect your information</h2>
+      <p>
+        All traffic to Contacts Exchange is encrypted with HTTPS, and browsers are told to always
+        use HTTPS. Google access and refresh tokens are encrypted before they are stored, using a
+        secret key that is kept outside the database. Passwords are stored only as one-way hashes.
+        Session cookies are secure and HTTP-only, so they are sent only over HTTPS and cannot be
+        read by scripts on the page.
+      </p>
+      <p>
+        Contact cards and Google connection data are available only to the signed-in owner of the
+        address book, and the server checks this on every request. Application secrets and API keys
+        are stored in our hosting provider’s environment settings, not in source code. Contact
+        information read from Google during an export is used only for that export and is not
+        stored.
       </p>
     </section>
     <section {...stylex.attrs(styles.section)}>
