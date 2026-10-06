@@ -11,6 +11,6 @@
   <nav {...stylex.attrs(styles.links)} aria-label="Footer">
     <a {...stylex.attrs(styles.link)} href="{root}/about">About</a>
     <a {...stylex.attrs(styles.link)} href="{root}/privacy">Privacy</a>
-    <a {...stylex.attrs(styles.link)} href="mailto:augie@contacts.exchange">Contact</a>
+    <a {...stylex.attrs(styles.link)} href="mailto:support@contacts.exchange">Contact</a>
   </nav>
 </footer>

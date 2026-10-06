@@ -15,7 +15,7 @@
     <p>
       Updated October 4, 2026. For privacy questions or deletion requests, contact <a
         {...stylex.attrs(styles.link)}
-        href="mailto:augie@contacts.exchange">augie@contacts.exchange</a
+        href="mailto:support@contacts.exchange">support@contacts.exchange</a
       >.
     </p>
     <section {...stylex.attrs(styles.section)}>
