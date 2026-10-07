@@ -89,6 +89,12 @@ export const previewExport = command(z.array(z.string()).min(1).max(1000), async
 
 const resolution = z.enum(['google', 'card', 'both', 'nickname']);
 
+/** What happened to one card in an export. */
+export type ExportOutcome =
+  | { contactId: string; status: 'added' | 'updated'; photoSkipped: boolean }
+  | { contactId: string; status: 'skipped' }
+  | { contactId: string; status: 'failed'; message: string };
+
 export const importToGoogle = command(
   z.object({
     ids: z.array(z.string()).min(1).max(3),
@@ -98,13 +104,11 @@ export const importToGoogle = command(
   async ({ ids, decisions }) => {
     const viewer = requireViewer();
     const google = await connect(viewer);
-    if (!google.ok) return { ...google, imported: 0, merged: 0, photoSkipped: 0 } as const;
+    const outcomes: ExportOutcome[] = [];
+    if (!google.ok) return { ok: false, message: google.message, outcomes } as const;
     const cards = (await addressBook(db).contacts(viewer.id)).filter((card) =>
       ids.includes(card.id)
     );
-    let imported = 0;
-    let merged = 0;
-    let photoSkipped = 0;
     // Google requires sequential writes for the same account. Keep each serverless batch small.
     for (const card of cards) {
       const result = await importGoogleContact(db, card, {
@@ -114,21 +118,31 @@ export const importToGoogle = command(
         decisions: decisions[card.id]
       });
       if (result.status === 'failed') {
-        await getGoogleConnection().refresh();
-        return { ok: false, message: result.message, imported, merged, photoSkipped } as const;
+        outcomes.push({ contactId: card.id, status: 'failed', message: result.message });
+        // Access and rate-limit problems affect every card, so stop; others only this one.
+        if (result.fatal) {
+          await getGoogleConnection().refresh();
+          return { ok: false, message: result.message, outcomes } as const;
+        }
+        continue;
       }
-      if (result.status === 'skipped') continue;
+      if (result.status === 'skipped') {
+        outcomes.push({ contactId: card.id, status: 'skipped' });
+        continue;
+      }
       // Keep the list current so later cards in this batch match what was just written.
       const index = google.people.findIndex(
         (person) => person.resourceName === result.person.resourceName
       );
       if (index === -1) google.people.push(result.person);
       else google.people[index] = result.person;
-      if (result.status === 'imported') imported++;
-      else merged++;
-      if (result.photoSkipped) photoSkipped++;
+      outcomes.push({
+        contactId: card.id,
+        status: result.status === 'imported' ? 'added' : 'updated',
+        photoSkipped: result.photoSkipped
+      });
     }
     await getGoogleConnection().refresh();
-    return { ok: true, imported, merged, photoSkipped } as const;
+    return { ok: true, outcomes } as const;
   }
 );

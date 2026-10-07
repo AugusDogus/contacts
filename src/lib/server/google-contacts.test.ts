@@ -181,6 +181,36 @@ test('a failed update can be retried and never creates a new contact', async () 
   expect(urls.every((url) => !url.includes('createContact'))).toBe(true);
   expect(await db.select().from(googleImports)).toHaveLength(0);
 });
+test('a rejected update explains Google’s reason, and only access problems stop the run', async () => {
+  const { db, contact } = await setup();
+  const existing = { resourceName: 'people/c9', emailAddresses: [{ value: 'jamie@example.com' }] };
+  const card = { ...contact, data: { ...contact.data, company: 'New Co' } };
+  const target = { accountId: 'google-account', token: 'token', people: [existing] };
+  const rejecting = (status: number) => async () =>
+    Response.json({ error: { message: 'Invalid organization' } }, { status });
+  expect(await importGoogleContact(db, card, target, rejecting(400))).toMatchObject({
+    status: 'failed',
+    fatal: false,
+    message: expect.stringContaining('Invalid organization')
+  });
+  expect(await importGoogleContact(db, card, target, rejecting(401))).toMatchObject({
+    status: 'failed',
+    fatal: true
+  });
+});
+test('an update Google accepted still counts as merged when its reply is unreadable', async () => {
+  const { db, contact } = await setup();
+  const existing = { resourceName: 'people/c9', emailAddresses: [{ value: 'jamie@example.com' }] };
+  const card = { ...contact, data: { ...contact.data, company: 'New Co' } };
+  const result = await importGoogleContact(
+    db,
+    card,
+    { accountId: 'google-account', token: 'token', people: [existing] },
+    async () => new Response('not json')
+  );
+  expect(result).toMatchObject({ status: 'merged', person: existing });
+  expect((await db.select().from(googleImports))[0]).toMatchObject({ status: 'merged' });
+});
 test('lists every page of Google contacts', async () => {
   const pages: Record<string, unknown> = {
     '': { connections: [{ resourceName: 'people/a' }], nextPageToken: 'next' },

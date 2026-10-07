@@ -6,16 +6,14 @@
   import { getGoogleConnection, importToGoogle, previewExport } from '#lib/google.remote.ts';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { authClient } from '#lib/auth-client.ts';
-  import { notify } from '#lib/notice.svelte.ts';
   import ExportReview from '#lib/components/ExportReview.svelte';
+  import ExportProgress, { type ExportStep } from '#lib/components/ExportProgress.svelte';
   import { GooglePerson, type Resolution, type Row } from '#lib/google-person.ts';
   import type { ContactInput } from '#lib/contact.ts';
   let book = $derived(await getAddressBook());
   let connection = $derived(await getGoogleConnection());
   let busy = $state(false);
   let error = $state('');
-  let progress = $state(0);
-  let total = $state(0);
   let imports = $derived(connection.status === 'connected' ? connection.imports : []);
   let pending = $derived(book.contacts.filter((c) => !imports.some((i) => i.contactId === c.id)));
   const statusOf = (id: string) => imports.find((i) => i.contactId === id)?.status;
@@ -59,9 +57,18 @@
     merged: number;
   };
   let review = $state<Review | null>(null);
+  type Decisions = Record<string, Record<string, Resolution>>;
+  type Job = {
+    steps: ExportStep[];
+    decisions: Decisions;
+    running: boolean;
+    stopping: boolean;
+    notice: string;
+  };
+  let job = $state<Job | null>(null);
   // Leaving mid-export stops the remaining batches, so ask first.
   $effect(() => {
-    if (!busy || !total) return;
+    if (!job?.running) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     addEventListener('beforeunload', warn);
     return () => removeEventListener('beforeunload', warn);
@@ -70,7 +77,6 @@
   async function startExport() {
     busy = true;
     error = '';
-    total = 0;
     try {
       const plan = await previewExport(pending.map((c) => c.id));
       if (!plan.ok) {
@@ -79,7 +85,10 @@
         return;
       }
       if (!plan.review.some(({ rows }) => rows.some(GooglePerson.needsChoice)))
-        return await run({});
+        return await run(
+          {},
+          pending.map((c) => c.id)
+        );
       review = {
         created: plan.created,
         merged: plan.merged,
@@ -93,42 +102,60 @@
       busy = false;
     }
   }
-  async function run(decisions: Record<string, Record<string, Resolution>>) {
-    const ids = pending.map((c) => c.id);
+  /** Exports in batches of three, showing each person's outcome as it arrives. */
+  async function run(decisions: Decisions, ids: string[]) {
     review = null;
     busy = true;
     error = '';
-    progress = 0;
-    total = ids.length;
-    let photoSkipped = 0;
-    let merged = 0;
-    try {
-      for (let i = 0; i < ids.length; i += 3) {
-        const result = await importToGoogle({ ids: ids.slice(i, i + 3), decisions });
-        progress += result.imported + result.merged;
-        merged += result.merged;
-        photoSkipped += result.photoSkipped;
+    const current: Job = {
+      decisions,
+      running: true,
+      stopping: false,
+      notice: '',
+      steps: ids.flatMap((contactId) => {
+        const contact = book.contacts.find((c) => c.id === contactId);
+        return contact ? [{ contactId, person: contact.data, state: 'waiting', message: '' }] : [];
+      })
+    };
+    job = current;
+    // The reactive copy, so each change shows up in the progress modal immediately.
+    const live = job;
+    const update = (contactId: string, change: Partial<ExportStep>) => {
+      const step = live.steps.find((s) => s.contactId === contactId);
+      if (step) Object.assign(step, change);
+    };
+    for (let i = 0; i < ids.length; i += 3) {
+      if (live.stopping) break;
+      const batch = ids.slice(i, i + 3);
+      for (const id of batch) update(id, { state: 'working' });
+      try {
+        const result = await importToGoogle({ ids: batch, decisions });
+        for (const outcome of result.outcomes)
+          update(
+            outcome.contactId,
+            outcome.status === 'failed'
+              ? { state: 'failed', message: outcome.message }
+              : outcome.status === 'skipped'
+                ? { state: 'skipped' }
+                : {
+                    state: outcome.status,
+                    message: outcome.photoSkipped ? 'The photo couldn’t be copied.' : ''
+                  }
+          );
         if (!result.ok) {
-          error = `Exported ${progress} of ${total}. ${result.message}`;
-          return;
+          live.notice = result.message;
+          break;
         }
+      } catch {
+        live.notice =
+          'Lost the connection to the server. Some of these may have been exported. Check Google Contacts, then refresh this page to see who’s left.';
+        break;
       }
-      const fresh = progress - merged;
-      const message = [
-        fresh && `added ${fresh} to Google`,
-        merged && `updated ${merged} existing ${merged === 1 ? 'contact' : 'contacts'}`,
-        photoSkipped && `${photoSkipped} photos couldn’t be copied`
-      ]
-        .filter(Boolean)
-        .join(', ');
-      notify(
-        message ? message.charAt(0).toUpperCase() + message.slice(1) : 'Nothing new to export'
-      );
-    } catch {
-      error = `Stopped after exporting ${progress} of ${total}. Refresh to see who’s left.`;
-    } finally {
-      busy = false;
     }
+    for (const step of live.steps)
+      if (step.state === 'waiting' || step.state === 'working') step.state = 'stopped';
+    live.running = false;
+    busy = false;
   }
 </script>
 
@@ -174,11 +201,7 @@
             {...stylex.attrs(ui.button, ui.small, ui.primary)}
             disabled={busy}
             onclick={startExport}
-            >{busy
-              ? total
-                ? `Exporting ${progress}/${total}…`
-                : 'Checking Google…'
-              : `Export ${pending.length}`}</button
+            >{busy ? (job ? 'Exporting…' : 'Checking Google…') : `Export ${pending.length}`}</button
           >{/if}
       {:else if connection.status === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
           >Sign up to connect</a
@@ -226,9 +249,28 @@
     items={review.items}
     created={review.created}
     merged={review.merged}
-    onconfirm={(decisions) => void run(decisions)}
+    onconfirm={(decisions) =>
+      void run(
+        decisions,
+        pending.map((c) => c.id)
+      )}
     onclose={() => {
       review = null;
       busy = false;
     }}
+  />{/if}
+{#if job}<ExportProgress
+    steps={job.steps}
+    running={job.running}
+    stopping={job.stopping}
+    notice={job.notice}
+    onstop={() => {
+      if (job) job.stopping = true;
+    }}
+    onretry={() => {
+      if (!job) return;
+      const failed = job.steps.filter((step) => step.state === 'failed').map((s) => s.contactId);
+      void run(job.decisions, failed);
+    }}
+    onclose={() => (job = null)}
   />{/if}

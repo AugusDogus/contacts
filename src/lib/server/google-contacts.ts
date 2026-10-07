@@ -10,7 +10,8 @@ export type ImportResult =
   | { status: 'imported'; photoSkipped: boolean; person: GooglePerson }
   | { status: 'merged'; photoSkipped: boolean; person: GooglePerson }
   | { status: 'skipped' }
-  | { status: 'failed'; message: string };
+  /** `fatal` failures (access denied, rate limited) affect every card, so the run stops. */
+  | { status: 'failed'; message: string; fatal: boolean };
 
 const api = 'https://people.googleapis.com/v1';
 const personFields =
@@ -19,6 +20,14 @@ const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
   'Content-Type': 'application/json'
 });
+/** Google's own explanation of a failed request, such as "Invalid birthday". */
+async function reason(response: Response) {
+  const body = z
+    .object({ error: z.object({ message: z.string() }) })
+    .safeParse(await response.json().catch(() => null));
+  return body.success ? body.data.error.message : '';
+}
+const fatal = (status: number) => status === 401 || status === 403 || status === 429;
 const deniedMessage =
   'Google denied access. Reconnect your Google account and grant Contacts access, then try again. Your contacts are still saved here.';
 
@@ -128,7 +137,7 @@ async function mergeInto(
   let person = existing;
   if (plan.fields.length) {
     // Each write sets fields to fixed values, so any failure can safely be retried.
-    let response: Response | null = null;
+    let response: Response;
     try {
       response = await request(
         `${api}/${existing.resourceName}:updateContact?updatePersonFields=${plan.fields.join(',')}&personFields=${personFields}`,
@@ -136,28 +145,46 @@ async function mergeInto(
           method: 'PATCH',
           headers: headers(token),
           body: JSON.stringify(plan.update),
-          signal: AbortSignal.timeout(8_000)
+          signal: AbortSignal.timeout(10_000)
         }
       );
-    } catch {
-      response = null;
-    }
-    const updated = response?.ok
-      ? GooglePerson.schema.safeParse(await response.json().catch(() => null))
-      : null;
-    if (!updated?.success) {
+    } catch (error) {
+      console.error(
+        `updateContact for contact ${contact.id} (${existing.resourceName}) got no response:`,
+        error
+      );
       await db.delete(googleImports).where(key);
       return {
         status: 'failed',
-        message:
-          response?.status === 401 || response?.status === 403
-            ? deniedMessage
-            : response?.status === 429
-              ? 'Google is receiving too many requests. Wait a minute, then try again.'
-              : `Couldn’t update ${contact.data.firstName}’s existing Google contact. It was left unchanged. Try again.`
+        fatal: false,
+        message: `Google didn’t respond in time, so it’s unclear whether ${contact.data.firstName}’s contact was updated. Trying again is safe.`
       };
     }
-    person = updated.data;
+    if (!response.ok) {
+      const detail = await reason(response);
+      console.error(
+        `updateContact for contact ${contact.id} (${existing.resourceName}) failed: HTTP ${response.status} ${detail}; fields ${plan.fields.join(',')}`
+      );
+      await db.delete(googleImports).where(key);
+      return {
+        status: 'failed',
+        fatal: fatal(response.status),
+        message:
+          response.status === 401 || response.status === 403
+            ? deniedMessage
+            : response.status === 429
+              ? 'Google is receiving too many requests. Wait a minute, then try again.'
+              : `Google rejected the update${detail ? `: “${detail}”` : ` (HTTP ${response.status})`}. ${contact.data.firstName}’s Google contact was left unchanged.`
+      };
+    }
+    // Google applied the update even if its reply can't be read, so this still counts as merged.
+    const updated = GooglePerson.schema.safeParse(await response.json().catch(() => null));
+    if (updated.success) person = updated.data;
+    else
+      console.error(
+        `updateContact for contact ${contact.id} (${existing.resourceName}) returned an unreadable person`,
+        updated.error.issues.slice(0, 3)
+      );
   }
   const photoSkipped = plan.addPhoto
     ? await uploadPhoto(existing.resourceName, contact.data.photo, token, request)
@@ -186,31 +213,42 @@ async function create(
     });
   } catch {
     await db.update(googleImports).set({ status: 'uncertain' }).where(key);
+    console.error(`createContact for contact ${contact.id} got no response`);
     return {
       status: 'failed',
+      fatal: false,
       message:
         'Google’s response was interrupted. Check Google Contacts before retrying this card. Your original contact is still saved here.'
     };
   }
   if (!response.ok) {
+    const detail = await reason(response);
+    console.error(
+      `createContact for contact ${contact.id} failed: HTTP ${response.status} ${detail}`
+    );
     const safeToRetry = [400, 401, 403, 404, 429].includes(response.status);
     if (safeToRetry) await db.delete(googleImports).where(key);
     else await db.update(googleImports).set({ status: 'uncertain' }).where(key);
     return {
       status: 'failed',
+      fatal: fatal(response.status),
       message:
         response.status === 401 || response.status === 403
           ? deniedMessage
           : response.status === 429
             ? 'Google is receiving too many requests. Wait a minute, then import the remaining contacts.'
-            : `Google could not confirm this import (HTTP ${response.status}). Check Google Contacts before trying again. Your original contact is still saved here.`
+            : safeToRetry
+              ? `Google rejected this contact${detail ? `: “${detail}”` : ` (HTTP ${response.status})`}. Nothing was added.`
+              : `Google could not confirm this import (HTTP ${response.status}). Check Google Contacts before trying again. Your original contact is still saved here.`
     };
   }
   const parsed = GooglePerson.schema.safeParse(await response.json().catch(() => null));
   if (!parsed.success) {
     await db.update(googleImports).set({ status: 'uncertain' }).where(key);
+    console.error(`createContact for contact ${contact.id} returned an unreadable person`);
     return {
       status: 'failed',
+      fatal: false,
       message:
         'Google accepted the request but returned an unreadable receipt. Check Google Contacts before retrying this card.'
     };
