@@ -59,6 +59,13 @@
     merged: number;
   };
   let review = $state<Review | null>(null);
+  // Leaving mid-export stops the remaining batches, so ask first.
+  $effect(() => {
+    if (!busy || !total) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    addEventListener('beforeunload', warn);
+    return () => removeEventListener('beforeunload', warn);
+  });
   // Work out what would change first, and only ask when Google has different details.
   async function startExport() {
     busy = true;

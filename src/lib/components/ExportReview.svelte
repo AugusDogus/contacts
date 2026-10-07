@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import * as stylex from '@stylexjs/stylex';
   import { Check, ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { ui } from '#lib/ui.stylex.ts';
@@ -40,6 +41,17 @@
   let index = $state(0);
   let item = $derived(items[index] ?? items[0]);
   let first = $derived(item?.person.firstName || 'their');
+  // Everyone with a difference must be looked at before exporting, so nothing is decided unseen.
+  const seen = new SvelteSet<string>();
+  $effect(() => {
+    if (item) seen.add(item.contactId);
+  });
+  let unreviewed = $derived(
+    items.filter((other) => other.rows.some(GooglePerson.needsChoice) && !seen.has(other.contactId))
+  );
+  let upcoming = $derived(
+    unreviewed.find((other) => items.indexOf(other) > index) ?? unreviewed[0]
+  );
   const selected = (contactId: string, row: Decided) =>
     decisions[contactId]?.[row.key] ?? row.selected;
   function set(contactId: string, key: string, value: Resolution) {
@@ -76,9 +88,10 @@
         set(other.contactId, key, value);
     }
   }
-  const status = (rows: Row[]) => {
+  const status = (contactId: string, rows: Row[]) => {
     const differences = rows.filter(GooglePerson.needsChoice).length;
     const added = rows.filter((row) => row.kind === 'added').length;
+    if (differences && seen.has(contactId)) return 'Reviewed';
     if (differences) return `${differences} ${differences === 1 ? 'difference' : 'differences'}`;
     if (added) return `Adds ${added} ${added === 1 ? 'detail' : 'details'}`;
     return 'Already up to date';
@@ -104,7 +117,7 @@
   <div {...stylex.attrs(styles.layout)}>
     <ul {...stylex.attrs(styles.people)} aria-label="Matched contacts">
       {#each items as other, i (other.contactId)}{@const open = i === index}{@const pending =
-          other.rows.some(GooglePerson.needsChoice)}
+          other.rows.some(GooglePerson.needsChoice) && !seen.has(other.contactId)}
         <li>
           <button
             type="button"
@@ -116,7 +129,7 @@
             <span {...stylex.attrs(styles.personText)}>
               <span {...stylex.attrs(styles.personName)}>{Contact.name(other.person)}</span>
               <span {...stylex.attrs(styles.personStatus, pending && styles.pendingStatus)}
-                >{status(other.rows)}</span
+                >{status(other.contactId, other.rows)}</span
               >
             </span>
           </button>
@@ -127,7 +140,7 @@
           <Avatar person={item.person} size={36} />
           <div {...stylex.attrs(styles.detailTitle)}>
             <h3 {...stylex.attrs(styles.detailName)}>{Contact.name(item.person)}</h3>
-            <p {...stylex.attrs(styles.detailStatus)}>{status(item.rows)}</p>
+            <p {...stylex.attrs(styles.detailStatus)}>{status(item.contactId, item.rows)}</p>
           </div>
           <div {...stylex.attrs(styles.stepper)}>
             <span {...stylex.attrs(styles.count)}>{index + 1} of {items.length}</span>
@@ -252,12 +265,21 @@
       </section>{/if}
   </div>
   <div {...stylex.attrs(styles.footer)}>
-    <p {...stylex.attrs(styles.summary)}>{summary}</p>
+    <p {...stylex.attrs(styles.summary)}>
+      {unreviewed.length
+        ? `${unreviewed.length} more ${unreviewed.length === 1 ? 'person' : 'people'} to review`
+        : summary}
+    </p>
     <div {...stylex.attrs(styles.actions)}>
-      <button {...stylex.attrs(ui.button)} onclick={onclose}>Cancel</button><button
-        {...stylex.attrs(ui.button, ui.primary)}
-        onclick={() => onconfirm($state.snapshot(decisions))}>Export</button
-      >
+      <button {...stylex.attrs(ui.button)} onclick={onclose}>Cancel</button>
+      {#if upcoming}{@const target = upcoming}<button
+          {...stylex.attrs(ui.button, ui.primary)}
+          onclick={() => (index = items.indexOf(target))}
+          >Next: {Contact.name(target.person)}<ChevronRight size={16} /></button
+        >{:else}<button
+          {...stylex.attrs(ui.button, ui.primary)}
+          onclick={() => onconfirm($state.snapshot(decisions))}>Export</button
+        >{/if}
     </div>
   </div>
 </Modal>
