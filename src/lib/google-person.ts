@@ -5,10 +5,21 @@ import { Address } from './address';
 /** A contact as Google's People API describes it, so requests are checked against Google's types. */
 export type Person = gapi.client.people.Person;
 
+/**
+ * The card's labelled answers for Google's custom fields: pronouns (Google Contacts has no
+ * field it shows for them) followed by the owner's custom questions.
+ */
+function customFields(contact: ContactInput) {
+  const answers = contact.custom.map(({ label, value }) => ({ label, value }));
+  const pronouns = 'Pronouns';
+  return contact.pronouns && !answers.some(({ label }) => normal(label) === normal(pronouns))
+    ? [{ label: pronouns, value: contact.pronouns }, ...answers]
+    : answers;
+}
+
 export function toGooglePerson(contact: ContactInput): Person {
-  const notes = [contact.pronouns ? `Pronouns: ${contact.pronouns}` : '', contact.notes]
-    .filter(Boolean)
-    .join('\n');
+  const notes = contact.notes;
+  const custom = customFields(contact);
   return {
     names: [{ givenName: contact.firstName, familyName: contact.lastName }],
     ...(contact.email ? { emailAddresses: [{ value: contact.email, type: 'home' }] } : {}),
@@ -49,8 +60,8 @@ export function toGooglePerson(contact: ContactInput): Person {
     ...(contact.company ? { organizations: [{ name: contact.company }] } : {}),
     ...(contact.website ? { urls: [{ value: contact.website }] } : {}),
     ...(notes ? { biographies: [{ value: notes, contentType: 'TEXT_PLAIN' }] } : {}),
-    ...(contact.custom.length
-      ? { userDefined: contact.custom.map(({ label, value }) => ({ key: label, value })) }
+    ...(custom.length
+      ? { userDefined: custom.map(({ label, value }) => ({ key: label, value })) }
       : {})
   };
 }
@@ -407,7 +418,8 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     .map((item) => ({ key: item.key ?? '', value: item.value ?? '' }));
   const existingCustom = [...custom];
   let customChanged = false;
-  for (const { label, value } of contact.custom) {
+  const answers = customFields(contact);
+  for (const { label, value } of answers) {
     const found = custom.find((item) => normal(item.key) === normal(label));
     const shown = {
       key: `custom:${normal(label)}`,
@@ -427,7 +439,7 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     }
   }
   for (const item of existingCustom)
-    if (!contact.custom.some(({ label }) => normal(label) === normal(item.key)))
+    if (!answers.some(({ label }) => normal(label) === normal(item.key)))
       rows.push({
         key: `custom:${normal(item.key)}`,
         label: item.key,

@@ -145,6 +145,22 @@ describe('merging into an existing Google contact', () => {
       { key: 'Discord', value: 'jamie#1' }
     ]);
   });
+  test('sends pronouns as a custom field rather than in the notes', () => {
+    const card = { ...jamie, pronouns: 'they/them', notes: 'Met at camp' };
+    expect(GooglePerson.from(card)).toMatchObject({
+      biographies: [{ value: 'Met at camp', contentType: 'TEXT_PLAIN' }],
+      userDefined: [{ key: 'Pronouns', value: 'they/them' }]
+    });
+    const plan = GooglePerson.merge(
+      card,
+      person({ emailAddresses: [{ value: 'jamie@example.com' }] })
+    );
+    expect(plan.rows.find((row) => row.key === 'custom:pronouns')).toMatchObject({
+      kind: 'added',
+      card: 'they/them'
+    });
+    expect(plan.update.userDefined).toEqual([{ key: 'Pronouns', value: 'they/them' }]);
+  });
   test('adds a photo only when Google has just the placeholder', () => {
     const card = { ...jamie, photo: 'data:image/jpeg;base64,AAAA' };
     expect(GooglePerson.merge(card, person({ photos: [{ default: true }] })).addPhoto).toBe(true);
