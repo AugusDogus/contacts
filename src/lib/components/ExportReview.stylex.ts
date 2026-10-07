@@ -160,24 +160,6 @@ export const styles = stylex.create({
   value: { display: 'block' },
   photo: { display: 'block', width: 44, height: 44, borderRadius: 999, objectFit: 'cover' },
   nickname: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: tokens.muted },
-  applyRow: { gridColumn: { default: '2 / -1', [media.mobile]: '1 / -1' }, marginTop: -2 },
-  appliedNote: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-    fontSize: 13,
-    color: tokens.muted
-  },
-  apply: {
-    padding: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    color: tokens.blue,
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: 'pointer',
-    textDecoration: { default: 'none', [media.hover]: { ':hover': 'underline' } }
-  },
   footer: {
     display: 'flex',
     alignItems: 'center',

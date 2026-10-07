@@ -74,41 +74,6 @@
     if (!google && !card) return;
     set(contactId, row.key, google && card ? 'both' : card ? 'card' : 'google');
   }
-  /** Other people with the same kind of difference, for applying one choice to everyone. */
-  function alike(key: string) {
-    return items.filter(
-      (other) =>
-        other !== item && other.rows.some((row) => row.kind === 'different' && row.key === key)
-    );
-  }
-  function applyToAll(key: string, value: Resolution) {
-    for (const other of items) {
-      const row = other.rows.find((row) => row.kind === 'different' && row.key === key);
-      if (row?.kind === 'different' && row.options.includes(value))
-        set(other.contactId, key, value);
-    }
-  }
-  /** "Joseph, Sierra and Devin", or "Joseph, Sierra and 4 others" for longer lists. */
-  function names(people: Item[]) {
-    const first = people.map((other) => other.person.firstName);
-    if (first.length > 3) return `${first.slice(0, 2).join(', ')} and ${first.length - 2} others`;
-    return first.length > 1
-      ? `${first.slice(0, -1).join(', ')} and ${first.at(-1)}`
-      : first.join('');
-  }
-  /** Says exactly what copying this choice to the others does. */
-  function applyText(row: Decided, choice: Resolution, others: Item[]) {
-    const noun = row.key.startsWith('custom:') ? row.label : row.label.toLowerCase();
-    const action = {
-      google: `Keep Google’s ${noun}`,
-      card: `Use the card’s ${noun}`,
-      both: `Keep both ${noun} values`,
-      nickname: `Use the card’s ${noun} and keep Google’s as a nickname`
-    }[choice];
-    return `${action} for ${names(others)} too`;
-  }
-  const applied = (key: string, choice: Resolution, others: Item[]) =>
-    others.every((other) => decisions[other.contactId]?.[key] === choice);
   const status = (contactId: string, rows: Row[]) => {
     const differences = rows.filter(GooglePerson.needsChoice).length;
     const added = rows.filter((row) => row.kind === 'added').length;
@@ -268,19 +233,6 @@
                     </label>
                   {/if}
                 </div>
-                {#if row.kind === 'different'}{@const others = alike(row.key)}{#if others.length}
-                    <div {...stylex.attrs(styles.applyRow)}>
-                      {#if applied(row.key, choice, others)}<span
-                          {...stylex.attrs(styles.appliedNote)}
-                          ><Check size={13} />Same choice for {names(others)}</span
-                        >{:else}<button
-                          type="button"
-                          {...stylex.attrs(styles.apply)}
-                          onclick={() => applyToAll(row.key, choice)}
-                          >{applyText(row, choice, others)}</button
-                        >{/if}
-                    </div>
-                  {/if}{/if}
               {/if}
             </div>
           {/each}
