@@ -45,7 +45,7 @@ export function toGooglePerson(contact: ContactInput) {
       : {}),
     ...(contact.company ? { organizations: [{ name: contact.company }] } : {}),
     ...(contact.website ? { urls: [{ value: contact.website }] } : {}),
-    ...(notes ? { biographies: [{ value: notes, contentType: 'TEXT' }] } : {}),
+    ...(notes ? { biographies: [{ value: notes, contentType: 'TEXT_PLAIN' }] } : {}),
     ...(contact.custom.length
       ? { userDefined: contact.custom.map(({ label, value }) => ({ key: label, value })) }
       : {})
@@ -244,7 +244,7 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
         [...existing.map((b) => String(b.value ?? '')), card.biographies?.[0]?.value],
         '\n\n'
       );
-      update.biographies = [{ value: notes, contentType: 'TEXT' }];
+      update.biographies = [{ value: notes, contentType: 'TEXT_PLAIN' }];
     } else
       update[key] = (
         selected === 'both' ? [...existing.map(writable), ...value] : value

@@ -10,11 +10,10 @@
 
 <script lang="ts">
   import * as stylex from '@stylexjs/stylex';
-  import { Check, LoaderCircle, Minus, X } from '@lucide/svelte';
+  import { Check, TriangleAlert } from '@lucide/svelte';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './ExportProgress.stylex.ts';
   import Modal from './Modal.svelte';
-  import Avatar from './Avatar.svelte';
   import { Contact } from '#lib/contact.ts';
   let {
     steps,
@@ -34,43 +33,51 @@
     onretry: () => void;
     onclose: () => void;
   } = $props();
-  const labels: Record<ExportStep['state'], string> = {
-    waiting: 'Waiting',
-    working: 'Exporting…',
-    added: 'Added to Google',
-    updated: 'Updated in Google',
-    skipped: 'Already exported',
-    failed: 'Failed',
-    stopped: 'Not exported'
-  };
   const count = (state: ExportStep['state']) => steps.filter((step) => step.state === state).length;
   let finished = $derived(
-    steps.filter((step) => !['waiting', 'working'].includes(step.state)).length
+    steps.filter((step) => step.state !== 'waiting' && step.state !== 'working').length
   );
-  let failed = $derived(count('failed'));
+  let failures = $derived(steps.filter((step) => step.state === 'failed'));
+  let problems = $derived(failures.length > 0 || count('stopped') > 0 || Boolean(notice));
   let percent = $derived(steps.length ? Math.round((finished / steps.length) * 100) : 0);
   let summary = $derived(
     [
       count('added') && `${count('added')} added`,
       count('updated') && `${count('updated')} updated`,
-      count('skipped') && `${count('skipped')} already exported`,
-      failed && `${failed} failed`,
+      count('skipped') && `${count('skipped')} already in Google`,
+      failures.length && `${failures.length} failed`,
       count('stopped') && `${count('stopped')} not exported`
     ]
       .filter(Boolean)
       .join(' · ')
   );
-  let title = $derived(
-    running
-      ? 'Exporting to Google'
-      : failed || count('stopped')
-        ? 'Export finished with problems'
-        : 'Export complete'
-  );
 </script>
 
-<Modal {title} dismissible={!running} {onclose}>
-  <div {...stylex.attrs(styles.progress)}>
+<Modal
+  title={running
+    ? 'Exporting to Google'
+    : problems
+      ? 'Export finished with problems'
+      : 'Export complete'}
+  dismissible={!running}
+  {onclose}
+>
+  <div {...stylex.attrs(styles.hero)}>
+    <div {...stylex.attrs(styles.art)}>
+      <img
+        {...stylex.attrs(styles.logo, running && styles.bob)}
+        src="/favicon.svg"
+        alt=""
+        width="72"
+        height="72"
+      />
+      {#if !running}<span {...stylex.attrs(styles.badge, problems && styles.badgeWarn)}
+          >{#if problems}<TriangleAlert size={14} strokeWidth={2.5} />{:else}<Check
+              size={14}
+              strokeWidth={3}
+            />{/if}</span
+        >{/if}
+    </div>
     <div
       {...stylex.attrs(styles.track)}
       role="progressbar"
@@ -80,50 +87,32 @@
       aria-valuenow={finished}
     >
       <div
-        {...stylex.attrs(styles.bar, !running && failed > 0 && styles.barWarn)}
+        {...stylex.attrs(styles.bar, !running && problems && styles.barWarn)}
         style="width:{percent}%"
       ></div>
     </div>
-    <p {...stylex.attrs(styles.counts)} aria-live="polite">
-      {running ? `${finished} of ${steps.length} done` : summary}
+    <p {...stylex.attrs(styles.status)} aria-live="polite">
+      {running
+        ? stopping
+          ? `Stopping after this batch… ${finished} of ${steps.length}`
+          : `Syncing ${Math.min(finished + 1, steps.length)} of ${steps.length}…`
+        : summary}
     </p>
   </div>
-  {#if notice}<p {...stylex.attrs(ui.formError, styles.notice)} role="alert">{notice}</p>{/if}
-  <ul {...stylex.attrs(styles.list)}>
-    {#each steps as step (step.contactId)}{@const done =
-        step.state === 'added' || step.state === 'updated'}{@const bad = step.state === 'failed'}
-      <li {...stylex.attrs(styles.item)}>
-        <Avatar person={step.person} size={28} />
-        <div {...stylex.attrs(styles.body)}>
-          <div {...stylex.attrs(styles.line)}>
-            <span {...stylex.attrs(styles.name)}>{Contact.name(step.person)}</span>
-            <span
-              {...stylex.attrs(
-                styles.state,
-                done && styles.stateDone,
-                bad && styles.stateFailed,
-                step.state === 'working' && styles.stateWorking
-              )}
-            >
-              {#if step.state === 'working'}<span {...stylex.attrs(styles.spin)}
-                  ><LoaderCircle size={14} /></span
-                >{:else if done}<Check size={14} />{:else if bad}<X
-                  size={14}
-                />{:else if step.state !== 'waiting'}<Minus size={14} />{/if}{labels[step.state]}
-            </span>
-          </div>
-          {#if step.message}<p {...stylex.attrs(styles.message, bad && styles.messageFailed)}>
-              {step.message}
-            </p>{/if}
-        </div>
-      </li>
-    {/each}
-  </ul>
+  {#if !running && notice}<p {...stylex.attrs(ui.formError, styles.notice)} role="alert">
+      {notice}
+    </p>{/if}
+  {#if !running && failures.length}<ul {...stylex.attrs(styles.failures)}>
+      {#each failures as step (step.contactId)}<li {...stylex.attrs(styles.failure)}>
+          <span {...stylex.attrs(styles.name)}>{Contact.name(step.person)}</span>
+          <span {...stylex.attrs(styles.reason)}>{step.message}</span>
+        </li>{/each}
+    </ul>{/if}
   <div {...stylex.attrs(styles.footer)}>
     {#if running}<button {...stylex.attrs(ui.button)} disabled={stopping} onclick={onstop}
-        >{stopping ? 'Stopping after this batch…' : 'Stop'}</button
-      >{:else}{#if failed}<button {...stylex.attrs(ui.button)} onclick={onretry}
-          >Retry {failed} failed</button
+        >Stop</button
+      >{:else}{#if failures.length}<button {...stylex.attrs(ui.button)} onclick={onretry}
+          >Retry {failures.length} failed</button
         >{/if}<button {...stylex.attrs(ui.button, ui.primary)} onclick={onclose}>Done</button>{/if}
   </div>
 </Modal>

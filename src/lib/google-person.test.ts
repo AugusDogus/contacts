@@ -100,7 +100,7 @@ describe('merging into an existing Google contact', () => {
       person({ biographies: [{ value: 'Met at camp' }] })
     );
     expect(plan.update.biographies).toEqual([
-      { value: 'Met at camp\n\nText me', contentType: 'TEXT' }
+      { value: 'Met at camp\n\nText me', contentType: 'TEXT_PLAIN' }
     ]);
   });
   test('adds new custom answers and offers a choice for different ones', () => {
