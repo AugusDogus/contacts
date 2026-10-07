@@ -57,7 +57,11 @@ describe('merging into an existing Google contact', () => {
         organizations: [{ name: 'acme' }]
       })
     );
-    expect(plan.choices.map(({ key, selected }) => ({ key, selected }))).toEqual([
+    expect(
+      plan.rows.flatMap((row) =>
+        row.kind === 'different' ? [{ key: row.key, selected: row.selected }] : []
+      )
+    ).toEqual([
       { key: 'names', selected: 'google' },
       { key: 'emailAddresses', selected: 'both' }
     ]);
@@ -117,12 +121,13 @@ describe('merging into an existing Google contact', () => {
       ]
     });
     const plan = GooglePerson.merge(card, existing);
-    expect(plan.choices).toEqual([
+    expect(plan.rows.filter(GooglePerson.needsChoice)).toEqual([
       {
         key: 'custom:shirt size',
         label: 'Shirt size',
-        google: 'L',
+        google: ['L'],
         card: 'M',
+        kind: 'different',
         options: ['card', 'google'],
         selected: 'card'
       }
@@ -154,6 +159,54 @@ describe('merging into an existing Google contact', () => {
         phoneNumbers: [{ value: '312.555.0100' }]
       })
     );
-    expect(plan).toMatchObject({ fields: [], choices: [], addPhoto: false });
+    expect(plan).toMatchObject({ fields: [], addPhoto: false });
+    expect(plan.rows.map(({ key, kind }) => ({ key, kind }))).toEqual([
+      { key: 'names', kind: 'same' },
+      { key: 'emailAddresses', kind: 'same' },
+      { key: 'phoneNumbers', kind: 'same' }
+    ]);
+  });
+  test('describes details only Google has, and lets the owner skip ones only the card has', () => {
+    const existing = person({
+      names: [{ givenName: 'Jamie', familyName: 'Chen' }],
+      emailAddresses: [{ value: 'jamie@example.com' }],
+      organizations: [{ name: 'Acme' }],
+      userDefined: [{ key: 'Pet', value: 'Dog' }]
+    });
+    const plan = GooglePerson.merge(jamie, existing);
+    expect(plan.rows.map(({ key, kind }) => ({ key, kind }))).toEqual([
+      { key: 'names', kind: 'same' },
+      { key: 'emailAddresses', kind: 'same' },
+      { key: 'phoneNumbers', kind: 'added' },
+      { key: 'organizations', kind: 'kept' },
+      { key: 'custom:pet', kind: 'kept' }
+    ]);
+    expect(plan.fields).toEqual(['phoneNumbers']);
+    expect(GooglePerson.merge(jamie, existing, { phoneNumbers: 'google' }).fields).toEqual([]);
+  });
+  test('can use the card’s name and keep Google’s as a nickname', () => {
+    const plan = GooglePerson.merge(
+      jamie,
+      person({
+        names: [{ givenName: 'Jamie', familyName: '- PK', metadata: { primary: true } }],
+        nicknames: [{ value: 'J' }]
+      }),
+      { names: 'nickname' }
+    );
+    expect(plan.update.names).toEqual([{ givenName: 'Jamie', familyName: 'Chen' }]);
+    expect(plan.update.nicknames).toEqual([{ value: 'J' }, { value: 'Jamie - PK' }]);
+    expect(plan.fields).toContain('nicknames');
+  });
+  test('replaces Google’s photo only when the owner picks the card’s', () => {
+    const card = { ...jamie, photo: 'data:image/jpeg;base64,AAAA' };
+    const existing = person({ photos: [{ url: 'https://lh3.example/p.jpg' }] });
+    const plan = GooglePerson.merge(card, existing);
+    expect(plan.rows.find((row) => row.key === 'photos')).toMatchObject({
+      kind: 'different',
+      google: ['https://lh3.example/p.jpg'],
+      selected: 'google'
+    });
+    expect(plan.addPhoto).toBe(false);
+    expect(GooglePerson.merge(card, existing, { photos: 'card' }).addPhoto).toBe(true);
   });
 });

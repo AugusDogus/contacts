@@ -178,7 +178,7 @@
     </div>
   </section>
 </div>
-{#if editing}<Modal title="Your card" wide onclose={() => (editing = false)}
+{#if editing}<Modal title="Your card" size="wide" onclose={() => (editing = false)}
     ><ContactForm
       initial={book.savedCard ?? undefined}
       buttonLabel="Save card"

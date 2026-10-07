@@ -7,7 +7,7 @@ import { db } from './server/db';
 import { contacts, googleImports } from './server/schema';
 import { addressBook } from './server/address-book';
 import { importGoogleContact, listGooglePeople } from './server/google-contacts';
-import { GooglePerson, type Choice } from './google-person';
+import { GooglePerson, type Row } from './google-person';
 
 const contactsScope = 'https://www.googleapis.com/auth/contacts';
 type Viewer = ReturnType<typeof requireViewer>;
@@ -68,24 +68,26 @@ export const previewExport = command(z.array(z.string()).min(1).max(1000), async
   const viewer = requireViewer();
   const google = await connect(viewer);
   if (!google.ok) return google;
-  const cards = (await addressBook(db).contacts(viewer.id)).filter((card) =>
-    ids.includes(card.id)
-  );
+  const cards = (await addressBook(db).contacts(viewer.id)).filter((card) => ids.includes(card.id));
   let created = 0;
-  const review: { contactId: string; choices: Choice[] }[] = [];
+  // Every matched contact, so the owner sees the full picture; ones needing a choice first.
+  const review: { contactId: string; rows: Row[] }[] = [];
   for (const card of cards) {
     const existing = GooglePerson.match(card.data, google.people);
     if (!existing) {
       created++;
       continue;
     }
-    const { choices } = GooglePerson.merge(card.data, existing);
-    if (choices.length) review.push({ contactId: card.id, choices });
+    review.push({ contactId: card.id, rows: GooglePerson.merge(card.data, existing).rows });
   }
+  review.sort(
+    (a, b) =>
+      Number(b.rows.some(GooglePerson.needsChoice)) - Number(a.rows.some(GooglePerson.needsChoice))
+  );
   return { ok: true, created, merged: cards.length - created, review } as const;
 });
 
-const resolution = z.enum(['google', 'card', 'both']);
+const resolution = z.enum(['google', 'card', 'both', 'nickname']);
 
 export const importToGoogle = command(
   z.object({

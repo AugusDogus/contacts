@@ -14,7 +14,7 @@ export type ImportResult =
 
 const api = 'https://people.googleapis.com/v1';
 const personFields =
-  'names,emailAddresses,phoneNumbers,addresses,birthdays,organizations,urls,biographies,userDefined,photos';
+  'names,nicknames,emailAddresses,phoneNumbers,addresses,birthdays,organizations,urls,biographies,userDefined,photos';
 const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
   'Content-Type': 'application/json'

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ContactInput } from './contact';
+import { Address } from './address';
 
 export function toGooglePerson(contact: ContactInput) {
   const notes = [contact.pronouns ? `Pronouns: ${contact.pronouns}` : '', contact.notes]
@@ -81,22 +82,28 @@ const schema = z.object({
   organizations: entry({ name: text }),
   urls: entry({ value: text }),
   biographies: entry({ value: text }),
+  nicknames: entry({ value: text }),
   userDefined: entry({ key: text, value: text }),
-  photos: z.array(z.object({ default: z.boolean().optional() })).optional()
+  photos: z.array(z.object({ url: text, default: z.boolean().optional() })).optional()
 });
 
 /** The parts of a Google contact used to match and merge cards. */
 export type GooglePerson = z.infer<typeof schema>;
-/** How to settle a detail Google already has with a different value. */
-export type Resolution = 'google' | 'card' | 'both';
-export type Choice = {
-  key: string;
-  label: string;
-  google: string;
-  card: string;
-  options: Resolution[];
-  selected: Resolution;
-};
+/**
+ * How to settle a detail: keep Google's, use the card's, keep both, or, for names, use the
+ * card's and keep Google's as a nickname. For a detail Google lacks, `google` skips it.
+ */
+export type Resolution = 'google' | 'card' | 'both' | 'nickname';
+type Shown = { key: string; label: string; google: string[]; card: string };
+/**
+ * One detail of a matched contact. `same` and `kept` (only Google has it) need nothing;
+ * `added` (only the card has it) and `different` are decided by the owner.
+ */
+export type Row =
+  | (Shown & { kind: 'same' | 'kept' })
+  | (Shown & { kind: 'added' | 'different'; options: Resolution[]; selected: Resolution });
+/** A row the owner decides. */
+export type Decided = Extract<Row, { kind: 'added' | 'different' }>;
 export type Decisions = Partial<Record<string, Resolution>>;
 type Body = ReturnType<typeof toGooglePerson>;
 type ListKey = Exclude<keyof Body, 'userDefined'>;
@@ -111,6 +118,19 @@ function samePhone(a = '', b = '') {
 }
 const join = (values: (string | undefined)[], separator = ', ') =>
   values.filter(Boolean).join(separator);
+const present = (values: (string | undefined)[] = []) =>
+  values.filter((value): value is string => Boolean(value));
+/** "1994-03-12" as "March 12, 1994", and a year-less "03-12" as "March 12". */
+function birthdayText(value: string) {
+  const [year, month, day] = value.length === 5 ? ['2000', ...value.split('-')] : value.split('-');
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    ...(value.length === 5 ? {} : { year: 'numeric' })
+  });
+}
 const birthday = (date?: { year?: number; month?: number; day?: number }) =>
   date?.month && date.day
     ? [date.year, date.month, date.day]
@@ -151,38 +171,73 @@ function match(contact: ContactInput, people: GooglePerson[]) {
 }
 
 /**
- * Fills details Google lacks. Details Google has with different values become choices,
- * settled by `decisions` or, without one, by the default for that detail.
+ * Describes every detail of the card and the matching Google contact, and plans the update.
+ * Details only the card has are added and differing ones are settled by `decisions` or,
+ * without one, by the default for that detail. Nothing is ever removed from Google.
  */
 function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions = {}) {
   const card = toGooglePerson(contact);
-  const update: Partial<Body> & { etag?: string } = { etag: person.etag };
+  const update: Partial<Body> & { etag?: string; nicknames?: Record<string, unknown>[] } = {
+    etag: person.etag
+  };
   const fields: string[] = [];
-  const choices: Choice[] = [];
-  function settle(choice: Omit<Choice, 'selected'>, fallback: Resolution) {
-    const decided = decisions[choice.key];
-    const selected = decided && choice.options.includes(decided) ? decided : fallback;
-    choices.push({ ...choice, selected });
+  const rows: Row[] = [];
+  function decide(
+    shown: Shown,
+    kind: 'added' | 'different',
+    options: Resolution[],
+    fallback: Resolution
+  ) {
+    const decided = decisions[shown.key];
+    const selected = decided && options.includes(decided) ? decided : fallback;
+    rows.push({ ...shown, kind, options, selected });
     return selected;
   }
   function check<K extends ListKey>(
     key: K,
     existing: Record<string, unknown>[] | undefined,
     same: () => boolean,
-    choice: { label: string; google: string; card: string; multiple: boolean; fallback: Resolution }
+    choice: {
+      label: string;
+      google: string[];
+      card: string;
+      multiple: boolean;
+      fallback: Resolution;
+    }
   ) {
+    const { label, google, card: shown, multiple, fallback } = choice;
+    const base = { key, label, google, card: shown };
     const value = card[key];
-    if (!value) return;
+    if (!value) {
+      if (existing?.length) rows.push({ ...base, kind: 'kept' });
+      return;
+    }
     if (!existing?.length) {
+      if (decide(base, 'added', ['card', 'google'], 'card') === 'google') return;
       update[key] = value;
       fields.push(key);
       return;
     }
-    if (same()) return;
-    const { label, google, card: shown, multiple, fallback } = choice;
-    const options: Resolution[] = multiple ? ['both', 'card', 'google'] : ['card', 'google'];
-    const selected = settle({ key, label, google, card: shown, options }, fallback);
+    if (same()) {
+      rows.push({ ...base, kind: 'same' });
+      return;
+    }
+    const options: Resolution[] =
+      key === 'names'
+        ? ['card', 'nickname', 'google']
+        : multiple
+          ? ['both', 'card', 'google']
+          : ['card', 'google'];
+    const selected = decide(base, 'different', options, fallback);
     if (selected === 'google') return;
+    if (selected === 'nickname') {
+      // The name Google had, like "Mom", stays findable as a nickname.
+      update.nicknames = [
+        ...(person.nicknames ?? []).map(writable),
+        ...google.map((value) => ({ value }))
+      ];
+      fields.push('nicknames');
+    }
     if (key === 'biographies' && selected === 'both') {
       // Notes are one block of text, so keeping both appends the card's notes.
       const notes = join(
@@ -196,20 +251,20 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
       ) as Body[K];
     fields.push(key);
   }
-  const name = `${contact.firstName} ${contact.lastName}`;
+  const names = person.names?.filter((n) => n.givenName || n.familyName);
   check(
     'names',
-    person.names?.filter((n) => n.givenName || n.familyName),
+    names,
     () =>
-      person.names?.some(
+      names?.some(
         (n) =>
           normal(n.givenName) === normal(contact.firstName) &&
           normal(n.familyName) === normal(contact.lastName)
       ) ?? false,
     {
       label: 'Name',
-      google: join(person.names?.map((n) => join([n.givenName, n.familyName], ' ')) ?? []),
-      card: name,
+      google: names?.map((n) => join([n.givenName, n.familyName], ' ')) ?? [],
+      card: `${contact.firstName} ${contact.lastName}`,
       multiple: false,
       // How you saved someone, like "Mom", usually matters more than their legal name.
       fallback: 'google'
@@ -221,7 +276,7 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     () => person.emailAddresses?.some((e) => normal(e.value) === normal(contact.email)) ?? false,
     {
       label: 'Email',
-      google: join(person.emailAddresses?.map((e) => e.value) ?? []),
+      google: present(person.emailAddresses?.map((e) => e.value)),
       card: contact.email,
       multiple: true,
       fallback: 'both'
@@ -233,7 +288,7 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     () => person.phoneNumbers?.some((n) => samePhone(n.value, contact.phone)) ?? false,
     {
       label: 'Phone',
-      google: join(person.phoneNumbers?.map((n) => n.value) ?? []),
+      google: present(person.phoneNumbers?.map((n) => n.value)),
       card: contact.phone,
       multiple: true,
       fallback: 'both'
@@ -257,41 +312,48 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
       ) ?? false,
     {
       label: 'Address',
-      google: join(
+      google: present(
         person.addresses?.map(
           (a) => a.formattedValue?.replace(/\n/g, ', ') || join(components.map((k) => a[k]))
-        ) ?? [],
-        ' / '
+        )
       ),
-      card: join(Object.values(address)),
+      card: join([
+        contact.street,
+        contact.street2,
+        contact.city,
+        join([contact.region, contact.postalCode], ' '),
+        Address.name(contact.country) || contact.country
+      ]),
       multiple: true,
       // People who send a new address have usually moved.
       fallback: 'card'
     }
   );
+  const birthdays = person.birthdays?.filter((b) => birthday(b.date));
   check(
     'birthdays',
-    person.birthdays?.filter((b) => birthday(b.date)),
+    birthdays,
     () =>
-      person.birthdays?.some(
+      birthdays?.some(
         (b) =>
           birthday(b.date) === contact.birthday || birthday(b.date) === contact.birthday.slice(5)
       ) ?? false,
     {
       label: 'Birthday',
-      google: join(person.birthdays?.map((b) => birthday(b.date)) ?? []),
-      card: contact.birthday,
+      google: birthdays?.map((b) => birthdayText(birthday(b.date))) ?? [],
+      card: birthdayText(contact.birthday),
       multiple: false,
       fallback: 'card'
     }
   );
+  const organizations = person.organizations?.filter((o) => o.name);
   check(
     'organizations',
-    person.organizations?.filter((o) => o.name),
-    () => person.organizations?.some((o) => normal(o.name) === normal(contact.company)) ?? false,
+    organizations,
+    () => organizations?.some((o) => normal(o.name) === normal(contact.company)) ?? false,
     {
       label: 'Company',
-      google: join(person.organizations?.map((o) => o.name) ?? []),
+      google: present(organizations?.map((o) => o.name)),
       card: contact.company,
       multiple: false,
       fallback: 'card'
@@ -303,20 +365,21 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     () => person.urls?.some((u) => normal(u.value) === normal(contact.website)) ?? false,
     {
       label: 'Website',
-      google: join(person.urls?.map((u) => u.value) ?? []),
+      google: present(person.urls?.map((u) => u.value)),
       card: contact.website,
       multiple: true,
       fallback: 'both'
     }
   );
   const notes = card.biographies?.[0]?.value ?? '';
+  const biographies = person.biographies?.filter((b) => b.value);
   check(
     'biographies',
-    person.biographies?.filter((b) => b.value),
-    () => person.biographies?.some((b) => normal(b.value).includes(normal(notes))) ?? false,
+    biographies,
+    () => biographies?.some((b) => normal(b.value).includes(normal(notes))) ?? false,
     {
       label: 'Notes',
-      google: join(person.biographies?.map((b) => b.value) ?? []),
+      google: present(biographies?.map((b) => b.value)),
       card: notes,
       multiple: true,
       fallback: 'both'
@@ -326,40 +389,69 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
   const custom = (person.userDefined ?? [])
     .filter((item) => item.key)
     .map((item) => ({ key: item.key ?? '', value: item.value ?? '' }));
+  const existingCustom = [...custom];
   let customChanged = false;
   for (const { label, value } of contact.custom) {
     const found = custom.find((item) => normal(item.key) === normal(label));
+    const shown = {
+      key: `custom:${normal(label)}`,
+      label,
+      google: found ? [found.value] : [],
+      card: value
+    };
     if (!found) {
-      custom.push({ key: label, value });
-      customChanged = true;
-    } else if (normal(found.value) !== normal(value)) {
-      const selected = settle(
-        {
-          key: `custom:${normal(label)}`,
-          label,
-          google: found.value,
-          card: value,
-          options: ['card', 'google']
-        },
-        'card'
-      );
-      if (selected === 'card') {
-        found.value = value;
+      if (decide(shown, 'added', ['card', 'google'], 'card') === 'card') {
+        custom.push({ key: label, value });
         customChanged = true;
       }
+    } else if (normal(found.value) === normal(value)) rows.push({ ...shown, kind: 'same' });
+    else if (decide(shown, 'different', ['card', 'google'], 'card') === 'card') {
+      found.value = value;
+      customChanged = true;
     }
   }
+  for (const item of existingCustom)
+    if (!contact.custom.some(({ label }) => normal(label) === normal(item.key)))
+      rows.push({
+        key: `custom:${normal(item.key)}`,
+        label: item.key,
+        google: [item.value],
+        card: '',
+        kind: 'kept'
+      });
   if (customChanged) {
     update.userDefined = custom;
     fields.push('userDefined');
   }
-  const addPhoto = Boolean(contact.photo) && !person.photos?.some((photo) => !photo.default);
-  return { update, fields, choices, addPhoto };
+  // Photos are shown as images, so the row carries Google's photo URL and a card placeholder.
+  const googlePhoto = person.photos?.find((photo) => !photo.default);
+  const photo = {
+    key: 'photos',
+    label: 'Photo',
+    google: googlePhoto?.url ? [googlePhoto.url] : []
+  };
+  let addPhoto = false;
+  if (contact.photo)
+    addPhoto =
+      decide(
+        { ...photo, card: 'Photo' },
+        googlePhoto ? 'different' : 'added',
+        ['card', 'google'],
+        googlePhoto ? 'google' : 'card'
+      ) === 'card';
+  else if (googlePhoto) rows.push({ ...photo, card: '', kind: 'kept' });
+  return { update, fields, rows, addPhoto };
 }
+
+/** Whether a row asks the owner to choose between differing values. */
+const needsChoice = (row: Row) => row.kind === 'different';
+const decided = (row: Row): row is Decided => row.kind === 'added' || row.kind === 'different';
 
 export const GooglePerson = {
   schema,
   from: toGooglePerson,
   match,
-  merge
+  merge,
+  needsChoice,
+  decided
 } as const;

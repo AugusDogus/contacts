@@ -9,8 +9,13 @@
     title,
     onclose,
     children,
-    wide = false
-  }: { title: string; onclose: () => void; children: Snippet; wide?: boolean } = $props();
+    size = 'default'
+  }: {
+    title: string;
+    onclose: () => void;
+    children: Snippet;
+    size?: 'default' | 'wide' | 'large';
+  } = $props();
   let dialog: HTMLDialogElement;
   $effect(() => {
     dialog.showModal();
@@ -22,7 +27,7 @@
 <dialog
   bind:this={dialog}
   tabindex="-1"
-  {...stylex.attrs(styles.dialog, wide && styles.wide)}
+  {...stylex.attrs(styles.dialog, size === 'wide' && styles.wide, size === 'large' && styles.large)}
   {onclose}
   onclick={(event) => {
     if (event.target === dialog) dialog.close();

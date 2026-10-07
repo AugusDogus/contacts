@@ -8,8 +8,8 @@
   import { authClient } from '#lib/auth-client.ts';
   import { notify } from '#lib/notice.svelte.ts';
   import ExportReview from '#lib/components/ExportReview.svelte';
-  import type { Choice, Resolution } from '#lib/google-person.ts';
-  import { Contact } from '#lib/contact.ts';
+  import { GooglePerson, type Resolution, type Row } from '#lib/google-person.ts';
+  import type { ContactInput } from '#lib/contact.ts';
   let book = $derived(await getAddressBook());
   let connection = $derived(await getGoogleConnection());
   let busy = $state(false);
@@ -54,7 +54,7 @@
     }
   }
   type Review = {
-    items: { contactId: string; name: string; choices: Choice[] }[];
+    items: { contactId: string; person: ContactInput; rows: Row[] }[];
     created: number;
     merged: number;
   };
@@ -71,13 +71,14 @@
         busy = false;
         return;
       }
-      if (!plan.review.length) return await run({});
+      if (!plan.review.some(({ rows }) => rows.some(GooglePerson.needsChoice)))
+        return await run({});
       review = {
         created: plan.created,
         merged: plan.merged,
-        items: plan.review.map(({ contactId, choices }) => {
+        items: plan.review.flatMap(({ contactId, rows }) => {
           const contact = book.contacts.find((c) => c.id === contactId);
-          return { contactId, name: contact ? Contact.name(contact.data) : '', choices };
+          return contact ? [{ contactId, person: contact.data, rows }] : [];
         })
       };
     } catch {

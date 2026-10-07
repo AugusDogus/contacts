@@ -26,6 +26,7 @@ export const styles = stylex.create({
     }
   },
   wide: { width: 'min(640px, calc(100vw - 24px))' },
+  large: { width: 'min(920px, calc(100vw - 24px))' },
   modalBody: { padding: { default: 24, [media.mobile]: 20 } },
   header: {
     display: 'flex',
