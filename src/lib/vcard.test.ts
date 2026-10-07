@@ -64,11 +64,18 @@ test('exports custom answers in the note so every contacts app keeps them', () =
         lastName: 'B',
         email: 'a@example.com',
         pronouns: 'they/them',
-        custom: [{ id: 'discord', label: 'Discord username', value: 'a#1' }]
+        custom: [
+          { id: 'discord', label: 'Discord username', value: 'a#1' },
+          { id: 'insta', label: 'Instagram', value: '@a.b' },
+          { id: 'shirt', label: 'Shirt size', value: 'M' }
+        ]
       }
     }
   ]);
-  expect(card).toContain('NOTE:Pronouns: they/them\\nDiscord username: a#1');
+  expect(card).toContain('X-SOCIALPROFILE;type=Discord;x-user="a#1":x-apple:a%231');
+  expect(card).toContain('X-SOCIALPROFILE;type=Instagram;x-user="a.b":https://instagram.com/a.b');
+  expect(card).toContain('NOTE:Pronouns: they/them\\nShirt size: M');
+  expect(card).not.toContain('Discord username:');
 });
 test('sends custom answers to Google as custom fields', () => {
   const person = toGooglePerson({
