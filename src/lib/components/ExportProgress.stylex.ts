@@ -9,12 +9,12 @@ export const styles = stylex.create({
     paddingTop: 8,
     paddingBottom: 4
   },
-  art: { position: 'relative', width: 72, height: 72 },
-  logo: { display: 'block', width: 72, height: 72 },
+  art: { position: 'relative', width: 180, height: 149 },
+  illustration: { display: 'block', width: 180, height: 149 },
   badge: {
     position: 'absolute',
-    right: -4,
-    bottom: -2,
+    right: 18,
+    bottom: 6,
     width: 24,
     height: 24,
     display: 'inline-flex',
