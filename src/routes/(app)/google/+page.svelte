@@ -66,6 +66,9 @@
     notice: string;
   };
   let job = $state<Job | null>(null);
+  // Which modal is open. Closing hides it without clearing its data: a closing modal still
+  // reads its props once more as it unmounts, and cleared data would crash the page.
+  let showing = $state<'review' | 'progress' | null>(null);
   // Leaving mid-export stops the remaining batches, so ask first.
   $effect(() => {
     if (!job?.running) return;
@@ -89,6 +92,7 @@
           {},
           pending.map((c) => c.id)
         );
+      showing = 'review';
       review = {
         created: plan.created,
         merged: plan.merged,
@@ -104,7 +108,7 @@
   }
   /** Exports in batches of three, showing each person's outcome as it arrives. */
   async function run(decisions: Decisions, ids: string[]) {
-    review = null;
+    showing = 'progress';
     busy = true;
     error = '';
     const current: Job = {
@@ -205,7 +209,11 @@
             {...stylex.attrs(ui.button, ui.small, ui.primary)}
             disabled={busy}
             onclick={startExport}
-            >{busy ? (job ? 'Exporting…' : 'Checking Google…') : `Export ${pending.length}`}</button
+            >{busy
+              ? showing === 'progress'
+                ? 'Exporting…'
+                : 'Checking Google…'
+              : `Export ${pending.length}`}</button
           >{/if}
       {:else if connection.status === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
           >Sign up to connect</a
@@ -249,7 +257,7 @@
   Google export matches existing contacts by email, phone, or name, fills in what’s missing, and
   asks before changing anything they already have.
 </p>
-{#if review}<ExportReview
+{#if showing === 'review' && review}<ExportReview
     items={review.items}
     created={review.created}
     merged={review.merged}
@@ -259,11 +267,11 @@
         pending.map((c) => c.id)
       )}
     onclose={() => {
-      review = null;
+      showing = null;
       busy = false;
     }}
   />{/if}
-{#if job}<ExportProgress
+{#if showing === 'progress' && job}<ExportProgress
     steps={job.steps}
     running={job.running}
     stopping={job.stopping}
@@ -276,5 +284,5 @@
       const failed = job.steps.filter((step) => step.state === 'failed').map((s) => s.contactId);
       void run(job.decisions, failed);
     }}
-    onclose={() => (job = null)}
+    onclose={() => (showing = null)}
   />{/if}
