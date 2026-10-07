@@ -134,7 +134,15 @@ export const importToGoogle = command(
         continue;
       }
       if (result.status === 'skipped') {
-        outcomes.push({ contactId: card.id, status: 'skipped' });
+        // A browser can resend this request after a dropped connection, so report what the
+        // first attempt did rather than "already exported".
+        outcomes.push(
+          result.previous === 'done'
+            ? { contactId: card.id, status: 'added', photoSkipped: false }
+            : result.previous === 'merged'
+              ? { contactId: card.id, status: 'updated', photoSkipped: false }
+              : { contactId: card.id, status: 'skipped' }
+        );
         continue;
       }
       // Keep the list current so later cards in this batch match what was just written.

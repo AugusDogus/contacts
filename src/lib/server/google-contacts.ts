@@ -9,7 +9,8 @@ type Request = (url: string, init: RequestInit) => Promise<Response>;
 export type ImportResult =
   | { status: 'imported'; photoSkipped: boolean; person: GooglePerson }
   | { status: 'merged'; photoSkipped: boolean; person: GooglePerson }
-  | { status: 'skipped' }
+  /** Already reserved, by an earlier export or a repeat of this request; `previous` is its state. */
+  | { status: 'skipped'; previous: 'pending' | 'done' | 'merged' | 'uncertain' }
   /** `fatal` failures (access denied, rate limited) affect every card, so the run stops. */
   | { status: 'failed'; message: string; fatal: boolean };
 
@@ -130,7 +131,13 @@ export async function importGoogleContact(
     .values({ contactId: contact.id, accountId, status: 'pending' })
     .onConflictDoNothing()
     .returning();
-  if (!reservation.length) return { status: 'skipped' };
+  if (!reservation.length) {
+    const [previous] = await db
+      .select({ status: googleImports.status })
+      .from(googleImports)
+      .where(key);
+    return { status: 'skipped', previous: previous?.status ?? 'pending' };
+  }
   const existing = GooglePerson.match(contact.data, people);
   return existing
     ? mergeInto(existing, decisions, db, contact, key, token, request)

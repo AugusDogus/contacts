@@ -159,7 +159,11 @@
   }
 </script>
 
-<svelte:head><title>Export | Contacts Exchange</title></svelte:head>
+<svelte:head
+  ><title>Export | Contacts Exchange</title>
+  <!-- Ready before the export modal opens, even on a slow or busy connection. -->
+  <link rel="preload" as="image" href="/export-otter.svg" /></svelte:head
+>
 <a href="/" {...stylex.attrs(ui.back)}><ArrowLeft size={15} />People</a>
 <div {...stylex.attrs(ui.pageHeading)}><h1>Export</h1></div>
 <section {...stylex.attrs(ui.panel)} aria-label="Export options">

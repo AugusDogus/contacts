@@ -137,7 +137,10 @@ test('fills in a matching Google contact instead of creating a duplicate', async
     status: 'merged',
     resourceName: 'people/c9'
   });
-  expect((await importGoogleContact(db, card, target, request)).status).toBe('skipped');
+  expect(await importGoogleContact(db, card, target, request)).toEqual({
+    status: 'skipped',
+    previous: 'merged'
+  });
 });
 test('replacing a detail with the card’s version is sent to Google', async () => {
   const { db, contact } = await setup();
