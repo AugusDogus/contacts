@@ -69,21 +69,28 @@ export const previewExport = command(z.array(z.string()).min(1).max(1000), async
   const google = await connect(viewer);
   if (!google.ok) return google;
   const cards = (await addressBook(db).contacts(viewer.id)).filter((card) => ids.includes(card.id));
-  let created = 0;
-  // Every matched contact, so the owner sees the full picture; ones needing a choice first.
-  const review: { contactId: string; rows: Row[] }[] = [];
-  for (const card of cards) {
-    const existing = GooglePerson.match(card.data, google.people);
-    if (!existing) {
-      created++;
-      continue;
+  // Everyone being exported, so the owner sees the full picture: people needing a choice first,
+  // then other existing contacts, then new ones (described as a merge into an empty contact).
+  const review: { contactId: string; match: 'existing' | 'new'; rows: Row[] }[] = cards.map(
+    (card) => {
+      const existing = GooglePerson.match(card.data, google.people);
+      return existing
+        ? {
+            contactId: card.id,
+            match: 'existing',
+            rows: GooglePerson.merge(card.data, existing).rows
+          }
+        : {
+            contactId: card.id,
+            match: 'new',
+            rows: GooglePerson.merge(card.data, { resourceName: 'people/new' }).rows
+          };
     }
-    review.push({ contactId: card.id, rows: GooglePerson.merge(card.data, existing).rows });
-  }
-  review.sort(
-    (a, b) =>
-      Number(b.rows.some(GooglePerson.needsChoice)) - Number(a.rows.some(GooglePerson.needsChoice))
   );
+  const rank = (entry: (typeof review)[number]) =>
+    entry.match === 'new' ? 2 : entry.rows.some(GooglePerson.needsChoice) ? 0 : 1;
+  review.sort((a, b) => rank(a) - rank(b));
+  const created = review.filter((entry) => entry.match === 'new').length;
   return { ok: true, created, merged: cards.length - created, review } as const;
 });
 

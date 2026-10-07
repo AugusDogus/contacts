@@ -9,7 +9,7 @@
   import Avatar from './Avatar.svelte';
   import { Contact, type ContactInput } from '#lib/contact.ts';
   import { GooglePerson, type Decided, type Resolution, type Row } from '#lib/google-person.ts';
-  type Item = { contactId: string; person: ContactInput; rows: Row[] };
+  type Item = { contactId: string; match: 'existing' | 'new'; person: ContactInput; rows: Row[] };
   let {
     items,
     created,
@@ -27,14 +27,23 @@
   let decisions = $state<Record<string, Record<string, Resolution>>>(
     untrack(() =>
       Object.fromEntries(
-        items.map(({ contactId, rows }) => [
-          contactId,
-          Object.fromEntries(
-            rows.flatMap((row) =>
-              row.kind === 'added' || row.kind === 'different' ? [[row.key, row.selected]] : []
-            )
-          )
-        ])
+        items.flatMap(({ contactId, match, rows }) =>
+          // New contacts are created as their card; there is nothing to settle.
+          match === 'new'
+            ? []
+            : [
+                [
+                  contactId,
+                  Object.fromEntries(
+                    rows.flatMap((row) =>
+                      row.kind === 'added' || row.kind === 'different'
+                        ? [[row.key, row.selected]]
+                        : []
+                    )
+                  )
+                ]
+              ]
+        )
       )
     )
   );
@@ -77,7 +86,8 @@
     if (!google && !card) return;
     set(contactId, row.key, google && card ? 'both' : card ? 'card' : 'google');
   }
-  const status = (contactId: string, rows: Row[]) => {
+  const status = ({ contactId, match, rows }: Item) => {
+    if (match === 'new') return 'New contact';
     const differences = rows.filter(GooglePerson.needsChoice).length;
     const added = rows.filter((row) => row.kind === 'added').length;
     if (differences && seen.has(contactId)) return 'Reviewed';
@@ -104,7 +114,7 @@
     different details. Pick what to keep for each one. Nothing changes until you export.
   </p>
   <div {...stylex.attrs(styles.layout)}>
-    <ul {...stylex.attrs(styles.people)} aria-label="Matched contacts">
+    <ul {...stylex.attrs(styles.people)} aria-label="Contacts to export">
       {#each items as other, i (other.contactId)}{@const open = i === index}{@const pending =
           other.rows.some(GooglePerson.needsChoice) && !seen.has(other.contactId)}
         <li>
@@ -118,7 +128,7 @@
             <span {...stylex.attrs(styles.personText)}>
               <span {...stylex.attrs(styles.personName)}>{Contact.name(other.person)}</span>
               <span {...stylex.attrs(styles.personStatus, pending && styles.pendingStatus)}
-                >{status(other.contactId, other.rows)}</span
+                >{status(other)}</span
               >
             </span>
           </button>
@@ -129,7 +139,7 @@
           <Avatar person={item.person} size={36} />
           <div {...stylex.attrs(styles.detailTitle)}>
             <h3 {...stylex.attrs(styles.detailName)}>{Contact.name(item.person)}</h3>
-            <p {...stylex.attrs(styles.detailStatus)}>{status(item.contactId, item.rows)}</p>
+            <p {...stylex.attrs(styles.detailStatus)}>{status(item)}</p>
           </div>
           <div {...stylex.attrs(styles.stepper)}>
             <span {...stylex.attrs(styles.count)}>{index + 1} of {items.length}</span>
@@ -146,100 +156,123 @@
             >
           </div>
         </header>
-        <div {...stylex.attrs(styles.table)} role="table" aria-label="Details">
-          <div {...stylex.attrs(styles.row, styles.headings)} role="row">
-            <span role="columnheader" {...stylex.attrs(styles.headingLabel)}
-              ><span {...stylex.attrs(ui.srOnly)}>Detail</span></span
-            >
-            <span role="columnheader">In Google</span>
-            <span role="columnheader">From {first}’s card</span>
+        {#if item.match === 'new'}
+          <div {...stylex.attrs(styles.table)} role="table" aria-label="Details">
+            <div {...stylex.attrs(styles.row, styles.headings)} role="row">
+              <span role="columnheader" {...stylex.attrs(styles.headingLabel)}
+                ><span {...stylex.attrs(ui.srOnly)}>Detail</span></span
+              >
+              <span role="columnheader" {...stylex.attrs(styles.span)}
+                >Will be added to Google as a new contact</span
+              >
+            </div>
+            {#each item.rows as row (row.key)}
+              <div {...stylex.attrs(styles.row)} role="row">
+                <span {...stylex.attrs(styles.label)} role="rowheader">{row.label}</span>
+                <div {...stylex.attrs(styles.cell, styles.span)} role="cell">
+                  {@render values(row, 'card', row.key === 'photos')}
+                </div>
+              </div>
+            {/each}
           </div>
-          {#each item.rows as row (row.key)}{@const photo = row.key === 'photos'}
-            <div {...stylex.attrs(styles.row, row.kind === 'kept' && styles.quiet)} role="row">
-              <span {...stylex.attrs(styles.label)} role="rowheader">{row.label}</span>
-              {#if row.kind === 'same'}
-                <div {...stylex.attrs(styles.cell, styles.span, styles.sameCell)} role="cell">
-                  <span {...stylex.attrs(styles.values)}>{row.card}</span>
-                  <span {...stylex.attrs(ui.badge)}><Check size={12} />In both</span>
-                </div>
-              {:else if row.kind === 'kept'}
-                <div {...stylex.attrs(styles.cell)} role="cell">
-                  {@render values(row, 'google', photo)}
-                </div>
-                <div {...stylex.attrs(styles.cell, styles.empty)} role="cell">Not on card</div>
-              {:else if GooglePerson.decided(row)}{@const choice = selected(
-                  item.contactId,
-                  row
-                )}{@const added = row.kind === 'added'}{@const multiple =
-                  row.options.includes('both')}{@const googleOn =
-                  choice === 'google' || choice === 'both'}{@const cardOn = choice !== 'google'}
-                {#if added}
-                  <div {...stylex.attrs(styles.cell, styles.empty)} role="cell">Not in Google</div>
-                {:else}
+        {:else}
+          <div {...stylex.attrs(styles.table)} role="table" aria-label="Details">
+            <div {...stylex.attrs(styles.row, styles.headings)} role="row">
+              <span role="columnheader" {...stylex.attrs(styles.headingLabel)}
+                ><span {...stylex.attrs(ui.srOnly)}>Detail</span></span
+              >
+              <span role="columnheader">In Google</span>
+              <span role="columnheader">From {first}’s card</span>
+            </div>
+            {#each item.rows as row (row.key)}{@const photo = row.key === 'photos'}
+              <div {...stylex.attrs(styles.row, row.kind === 'kept' && styles.quiet)} role="row">
+                <span {...stylex.attrs(styles.label)} role="rowheader">{row.label}</span>
+                {#if row.kind === 'same'}
+                  <div {...stylex.attrs(styles.cell, styles.span, styles.sameCell)} role="cell">
+                    <span {...stylex.attrs(styles.values)}>{row.card}</span>
+                    <span {...stylex.attrs(ui.badge)}><Check size={12} />In both</span>
+                  </div>
+                {:else if row.kind === 'kept'}
+                  <div {...stylex.attrs(styles.cell)} role="cell">
+                    {@render values(row, 'google', photo)}
+                  </div>
+                  <div {...stylex.attrs(styles.cell, styles.empty)} role="cell">Not on card</div>
+                {:else if GooglePerson.decided(row)}{@const choice = selected(
+                    item.contactId,
+                    row
+                  )}{@const added = row.kind === 'added'}{@const multiple =
+                    row.options.includes('both')}{@const googleOn =
+                    choice === 'google' || choice === 'both'}{@const cardOn = choice !== 'google'}
+                  {#if added}
+                    <div {...stylex.attrs(styles.cell, styles.empty)} role="cell">
+                      Not in Google
+                    </div>
+                  {:else}
+                    <div role="cell" {...stylex.attrs(styles.pickCell)}>
+                      <button
+                        type="button"
+                        role={multiple ? 'checkbox' : 'radio'}
+                        aria-checked={googleOn}
+                        aria-label="Keep Google’s {row.label.toLowerCase()}"
+                        {...stylex.attrs(styles.cell, styles.pick, googleOn && styles.picked)}
+                        onclick={() => toggle(item.contactId, row, 'google')}
+                      >
+                        <span
+                          {...stylex.attrs(
+                            styles.mark,
+                            !multiple && styles.round,
+                            googleOn && styles.markOn
+                          )}
+                          >{#if googleOn}<Check size={11} strokeWidth={3} />{/if}</span
+                        >
+                        <span {...stylex.attrs(styles.pickBody, !googleOn && styles.removed)}
+                          >{@render values(row, 'google', photo)}</span
+                        >
+                      </button>
+                    </div>
+                  {/if}
                   <div role="cell" {...stylex.attrs(styles.pickCell)}>
                     <button
                       type="button"
-                      role={multiple ? 'checkbox' : 'radio'}
-                      aria-checked={googleOn}
-                      aria-label="Keep Google’s {row.label.toLowerCase()}"
-                      {...stylex.attrs(styles.cell, styles.pick, googleOn && styles.picked)}
-                      onclick={() => toggle(item.contactId, row, 'google')}
+                      role={added || multiple ? 'checkbox' : 'radio'}
+                      aria-checked={cardOn}
+                      aria-label="{added ? 'Add' : 'Use'} the card’s {row.label.toLowerCase()}"
+                      {...stylex.attrs(styles.cell, styles.pick, cardOn && styles.picked)}
+                      onclick={() => toggle(item.contactId, row, 'card')}
                     >
                       <span
                         {...stylex.attrs(
                           styles.mark,
-                          !multiple && styles.round,
-                          googleOn && styles.markOn
+                          !added && !multiple && styles.round,
+                          cardOn && styles.markOn
                         )}
-                        >{#if googleOn}<Check size={11} strokeWidth={3} />{/if}</span
+                        >{#if cardOn}<Check size={11} strokeWidth={3} />{/if}</span
                       >
-                      <span {...stylex.attrs(styles.pickBody, !googleOn && styles.removed)}
-                        >{@render values(row, 'google', photo)}</span
+                      <span {...stylex.attrs(styles.pickBody, !cardOn && styles.skipped)}
+                        >{@render values(row, 'card', photo)}</span
                       >
                     </button>
+                    {#if row.kind === 'different' && row.options.includes('nickname') && cardOn}
+                      <label {...stylex.attrs(styles.nickname)}>
+                        <input
+                          type="checkbox"
+                          checked={choice === 'nickname'}
+                          onchange={(event) =>
+                            set(
+                              item.contactId,
+                              row.key,
+                              event.currentTarget.checked ? 'nickname' : 'card'
+                            )}
+                        />
+                        Keep “{row.google.join(', ')}” as a nickname
+                      </label>
+                    {/if}
                   </div>
                 {/if}
-                <div role="cell" {...stylex.attrs(styles.pickCell)}>
-                  <button
-                    type="button"
-                    role={added || multiple ? 'checkbox' : 'radio'}
-                    aria-checked={cardOn}
-                    aria-label="{added ? 'Add' : 'Use'} the card’s {row.label.toLowerCase()}"
-                    {...stylex.attrs(styles.cell, styles.pick, cardOn && styles.picked)}
-                    onclick={() => toggle(item.contactId, row, 'card')}
-                  >
-                    <span
-                      {...stylex.attrs(
-                        styles.mark,
-                        !added && !multiple && styles.round,
-                        cardOn && styles.markOn
-                      )}
-                      >{#if cardOn}<Check size={11} strokeWidth={3} />{/if}</span
-                    >
-                    <span {...stylex.attrs(styles.pickBody, !cardOn && styles.skipped)}
-                      >{@render values(row, 'card', photo)}</span
-                    >
-                  </button>
-                  {#if row.kind === 'different' && row.options.includes('nickname') && cardOn}
-                    <label {...stylex.attrs(styles.nickname)}>
-                      <input
-                        type="checkbox"
-                        checked={choice === 'nickname'}
-                        onchange={(event) =>
-                          set(
-                            item.contactId,
-                            row.key,
-                            event.currentTarget.checked ? 'nickname' : 'card'
-                          )}
-                      />
-                      Keep “{row.google.join(', ')}” as a nickname
-                    </label>
-                  {/if}
-                </div>
-              {/if}
-            </div>
-          {/each}
-        </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
       </section>{/if}
   </div>
   <div {...stylex.attrs(styles.footer)}>

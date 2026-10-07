@@ -52,7 +52,7 @@
     }
   }
   type Review = {
-    items: { contactId: string; person: ContactInput; rows: Row[] }[];
+    items: { contactId: string; match: 'existing' | 'new'; person: ContactInput; rows: Row[] }[];
     created: number;
     merged: number;
   };
@@ -92,9 +92,9 @@
       review = {
         created: plan.created,
         merged: plan.merged,
-        items: plan.review.flatMap(({ contactId, rows }) => {
+        items: plan.review.flatMap(({ contactId, match, rows }) => {
           const contact = book.contacts.find((c) => c.id === contactId);
-          return contact ? [{ contactId, person: contact.data, rows }] : [];
+          return contact ? [{ contactId, match, person: contact.data, rows }] : [];
         })
       };
     } catch {
