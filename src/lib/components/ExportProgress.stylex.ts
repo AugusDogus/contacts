@@ -1,9 +1,5 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '../tokens.stylex';
-const bob = stylex.keyframes({
-  '0%, 100%': { transform: 'translateY(0)' },
-  '50%': { transform: 'translateY(-5px)' }
-});
 export const styles = stylex.create({
   hero: {
     display: 'flex',
@@ -15,12 +11,6 @@ export const styles = stylex.create({
   },
   art: { position: 'relative', width: 72, height: 72 },
   logo: { display: 'block', width: 72, height: 72 },
-  bob: {
-    animationName: { default: bob, [media.reducedMotion]: 'none' },
-    animationDuration: '1.6s',
-    animationTimingFunction: 'ease-in-out',
-    animationIterationCount: 'infinite'
-  },
   badge: {
     position: 'absolute',
     right: -4,

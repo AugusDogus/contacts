@@ -64,13 +64,7 @@
 >
   <div {...stylex.attrs(styles.hero)}>
     <div {...stylex.attrs(styles.art)}>
-      <img
-        {...stylex.attrs(styles.logo, running && styles.bob)}
-        src="/favicon.svg"
-        alt=""
-        width="72"
-        height="72"
-      />
+      <img {...stylex.attrs(styles.logo)} src="/favicon.svg" alt="" width="72" height="72" />
       {#if !running}<span {...stylex.attrs(styles.badge, problems && styles.badgeWarn)}
           >{#if problems}<TriangleAlert size={14} strokeWidth={2.5} />{:else}<Check
               size={14}
