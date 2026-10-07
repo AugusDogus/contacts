@@ -26,6 +26,7 @@
         "zod": "^4.6.5",
       },
       "devDependencies": {
+        "@maxim_mazurok/gapi.client.people-v1": "^0.2.20261005",
         "@stylexjs/eslint-plugin": "^0.19.1",
         "@stylexjs/unplugin": "^0.19.1",
         "@types/bun": "latest",
@@ -303,6 +304,10 @@
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.3", "", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg=="],
 
+    "@maxim_mazurok/gapi.client.discovery-v1": ["@maxim_mazurok/gapi.client.discovery-v1@0.6.20200806", "", { "dependencies": { "@types/gapi.client": "*", "@types/gapi.client.discovery-v1": "*" } }, "sha512-QN6aGmIbLXcJW0SEf8tz9UWCpQTBMy2u4xSuZ04YofzMGknhWwMeUecySLntCZYAEstHzDoSgwxCf5Gb8GqIRQ=="],
+
+    "@maxim_mazurok/gapi.client.people-v1": ["@maxim_mazurok/gapi.client.people-v1@0.2.20261005", "", { "dependencies": { "@types/gapi.client": "*", "@types/gapi.client.discovery-v1": "*" } }, "sha512-v/esnoO4pfIkyQr+AouRx7Vd1gh9zA8726IV1NoOhYsV3WgculohOBUpYqTCwM3yt0GlXDA3IoRhE22kUxOCvA=="],
+
     "@neon-rs/load": ["@neon-rs/load@0.0.4", "", {}, "sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw=="],
 
     "@noble/ciphers": ["@noble/ciphers@2.4.0", "", {}, "sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw=="],
@@ -378,6 +383,10 @@
     "@types/esrecurse": ["@types/esrecurse@4.3.1", "", {}, "sha512-xJBAbDifo5hpffDBuHl0Y8ywswbiAp/Wi7Y/GtAgSlZyIABppyurxVueOPE8LUQOxdlgi6Zqce7uoEpqNTeiUw=="],
 
     "@types/estree": ["@types/estree@1.0.9", "", {}, "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg=="],
+
+    "@types/gapi.client": ["@types/gapi.client@1.0.8", "", {}, "sha512-qJQUmmumbYym3Amax0S8CVzuSngcXsC1fJdwRS2zeW5lM63zXkw4wJFP+bG0jzgi0R6EsJKoHnGNVTDbOyG1ng=="],
+
+    "@types/gapi.client.discovery-v1": ["@types/gapi.client.discovery-v1@0.0.4", "", { "dependencies": { "@maxim_mazurok/gapi.client.discovery-v1": "latest" } }, "sha512-uevhRumNE65F5mf2gABLaReOmbFSXONuzFZjNR3dYv6BmkHg+wciubHrfBAsp3554zNo3Dcg6dUAlwMqQfpwjQ=="],
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 

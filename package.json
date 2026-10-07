@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@maxim_mazurok/gapi.client.people-v1": "^0.2.20261005",
     "@stylexjs/eslint-plugin": "^0.19.1",
     "@stylexjs/unplugin": "^0.19.1",
     "@types/bun": "latest",

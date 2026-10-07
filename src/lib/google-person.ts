@@ -2,7 +2,10 @@ import { z } from 'zod';
 import type { ContactInput } from './contact';
 import { Address } from './address';
 
-export function toGooglePerson(contact: ContactInput) {
+/** A contact as Google's People API describes it, so requests are checked against Google's types. */
+export type Person = gapi.client.people.Person;
+
+export function toGooglePerson(contact: ContactInput): Person {
   const notes = [contact.pronouns ? `Pronouns: ${contact.pronouns}` : '', contact.notes]
     .filter(Boolean)
     .join('\n');
@@ -53,15 +56,21 @@ export function toGooglePerson(contact: ContactInput) {
 }
 
 const text = z.string().optional();
-// Loose entries keep Google's own labels, such as "work", when a list is sent back.
-const entry = <T extends z.ZodRawShape>(shape: T) => z.array(z.looseObject(shape)).optional();
+/**
+ * A list of Google's entries, checked for the parts read here and otherwise kept exactly as
+ * Google sent them, so labels such as "work" survive when a list is sent back.
+ */
+const entry = <T>(shape: z.ZodRawShape) => {
+  const check = z.looseObject(shape);
+  return z.array(z.custom<T>((value) => check.safeParse(value).success)).optional();
+};
 const schema = z.object({
   resourceName: z.string().regex(/^people\/[A-Za-z0-9_-]+$/),
   etag: text,
-  names: entry({ givenName: text, familyName: text }),
-  emailAddresses: entry({ value: text }),
-  phoneNumbers: entry({ value: text, canonicalForm: text }),
-  addresses: entry({
+  names: entry<gapi.client.people.Name>({ givenName: text, familyName: text }),
+  emailAddresses: entry<gapi.client.people.EmailAddress>({ value: text }),
+  phoneNumbers: entry<gapi.client.people.PhoneNumber>({ value: text, canonicalForm: text }),
+  addresses: entry<gapi.client.people.Address>({
     streetAddress: text,
     extendedAddress: text,
     city: text,
@@ -70,7 +79,7 @@ const schema = z.object({
     country: text,
     formattedValue: text
   }),
-  birthdays: entry({
+  birthdays: entry<gapi.client.people.Birthday>({
     date: z
       .object({
         year: z.number().optional(),
@@ -79,12 +88,12 @@ const schema = z.object({
       })
       .optional()
   }),
-  organizations: entry({ name: text }),
-  urls: entry({ value: text }),
-  biographies: entry({ value: text }),
-  nicknames: entry({ value: text }),
-  userDefined: entry({ key: text, value: text }),
-  photos: z.array(z.object({ url: text, default: z.boolean().optional() })).optional()
+  organizations: entry<gapi.client.people.Organization>({ name: text }),
+  urls: entry<gapi.client.people.Url>({ value: text }),
+  biographies: entry<gapi.client.people.Biography>({ value: text }),
+  nicknames: entry<gapi.client.people.Nickname>({ value: text }),
+  userDefined: entry<gapi.client.people.UserDefined>({ key: text, value: text }),
+  photos: entry<gapi.client.people.Photo>({ url: text, default: z.boolean().optional() })
 });
 
 /** The parts of a Google contact used to match and merge cards. */
@@ -105,8 +114,17 @@ export type Row =
 /** A row the owner decides. */
 export type Decided = Extract<Row, { kind: 'added' | 'different' }>;
 export type Decisions = Partial<Record<string, Resolution>>;
-type Body = ReturnType<typeof toGooglePerson>;
-type ListKey = Exclude<keyof Body, 'userDefined'>;
+/** A Person field name, as used in Google's field lists such as `updatePersonFields`. */
+export type PersonField = keyof Person;
+type ListKey =
+  | 'names'
+  | 'emailAddresses'
+  | 'phoneNumbers'
+  | 'addresses'
+  | 'birthdays'
+  | 'organizations'
+  | 'urls'
+  | 'biographies';
 
 const normal = (value = '') => value.trim().toLowerCase().replace(/\s+/g, ' ');
 const digits = (value = '') => value.replace(/\D/g, '');
@@ -138,13 +156,13 @@ const birthday = (date?: { year?: number; month?: number; day?: number }) =>
         .map((part) => String(part).padStart(2, '0'))
         .join('-')
     : '';
-// Read-only fields Google rejects or ignores when a list is written back.
-const writable = ({
-  metadata: _metadata,
-  formattedType: _formattedType,
-  canonicalForm: _canonicalForm,
-  ...rest
-}: Record<string, unknown>) => rest;
+/** A copy of Google's entry without the read-only fields it rejects when written back. */
+function writable<T extends object>(entry: T): T {
+  const copy = { ...entry };
+  for (const key of ['metadata', 'formattedType', 'canonicalForm'])
+    Reflect.deleteProperty(copy, key);
+  return copy;
+}
 
 function match(contact: ContactInput, people: GooglePerson[]) {
   const email = normal(contact.email);
@@ -177,10 +195,8 @@ function match(contact: ContactInput, people: GooglePerson[]) {
  */
 function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions = {}) {
   const card = toGooglePerson(contact);
-  const update: Partial<Body> & { etag?: string; nicknames?: Record<string, unknown>[] } = {
-    etag: person.etag
-  };
-  const fields: string[] = [];
+  const update: Person = { etag: person.etag };
+  const fields: PersonField[] = [];
   const rows: Row[] = [];
   function decide(
     shown: Shown,
@@ -195,7 +211,7 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
   }
   function check<K extends ListKey>(
     key: K,
-    existing: Record<string, unknown>[] | undefined,
+    existing: NonNullable<Person[K]> | undefined,
     same: () => boolean,
     choice: {
       label: string;
@@ -241,14 +257,14 @@ function merge(contact: ContactInput, person: GooglePerson, decisions: Decisions
     if (key === 'biographies' && selected === 'both') {
       // Notes are one block of text, so keeping both appends the card's notes.
       const notes = join(
-        [...existing.map((b) => String(b.value ?? '')), card.biographies?.[0]?.value],
+        [...(person.biographies ?? []).map((b) => b.value), card.biographies?.[0]?.value],
         '\n\n'
       );
       update.biographies = [{ value: notes, contentType: 'TEXT_PLAIN' }];
     } else
       update[key] = (
         selected === 'both' ? [...existing.map(writable), ...value] : value
-      ) as Body[K];
+      ) as Person[K];
     fields.push(key);
   }
   const names = person.names?.filter((n) => n.givenName || n.familyName);

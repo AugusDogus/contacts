@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Contact } from '../contact';
-import { GooglePerson, type Decisions } from '../google-person';
+import { GooglePerson, type Decisions, type PersonField } from '../google-person';
 import type { AppDatabase } from './db';
 import { googleImports } from './schema';
 
@@ -14,8 +14,21 @@ export type ImportResult =
   | { status: 'failed'; message: string; fatal: boolean };
 
 const api = 'https://people.googleapis.com/v1';
-const personFields =
-  'names,nicknames,emailAddresses,phoneNumbers,addresses,birthdays,organizations,urls,biographies,userDefined,photos';
+const personFields = (
+  [
+    'names',
+    'nicknames',
+    'emailAddresses',
+    'phoneNumbers',
+    'addresses',
+    'birthdays',
+    'organizations',
+    'urls',
+    'biographies',
+    'userDefined',
+    'photos'
+  ] satisfies PersonField[]
+).join(',');
 const headers = (token: string) => ({
   Authorization: `Bearer ${token}`,
   'Content-Type': 'application/json'
