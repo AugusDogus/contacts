@@ -41,17 +41,20 @@
   let index = $state(0);
   let item = $derived(items[index] ?? items[0]);
   let first = $derived(item?.person.firstName || 'their');
-  // Everyone with a difference must be looked at before exporting, so nothing is decided unseen.
+  // Everyone with a difference must be looked at before exporting. A person counts as
+  // reviewed once you move on from them, not when they first appear.
   const seen = new SvelteSet<string>();
-  $effect(() => {
-    if (item) seen.add(item.contactId);
-  });
   let unreviewed = $derived(
     items.filter((other) => other.rows.some(GooglePerson.needsChoice) && !seen.has(other.contactId))
   );
-  let upcoming = $derived(
-    unreviewed.find((other) => items.indexOf(other) > index) ?? unreviewed[0]
-  );
+  let upcoming = $derived.by(() => {
+    const later = unreviewed.filter((other) => other !== item);
+    return later.find((other) => items.indexOf(other) > index) ?? later[0];
+  });
+  function go(next: number) {
+    if (item) seen.add(item.contactId);
+    index = next;
+  }
   const selected = (contactId: string, row: Decided) =>
     decisions[contactId]?.[row.key] ?? row.selected;
   function set(contactId: string, key: string, value: Resolution) {
@@ -109,7 +112,7 @@
             type="button"
             aria-current={open}
             {...stylex.attrs(styles.personButton, open && styles.personOpen)}
-            onclick={() => (index = i)}
+            onclick={() => go(i)}
           >
             <Avatar person={other.person} size={28} />
             <span {...stylex.attrs(styles.personText)}>
@@ -134,12 +137,12 @@
               {...stylex.attrs(ui.iconButton)}
               aria-label="Previous person"
               disabled={index === 0}
-              onclick={() => index--}><ChevronLeft size={18} /></button
+              onclick={() => go(index - 1)}><ChevronLeft size={18} /></button
             ><button
               {...stylex.attrs(ui.iconButton)}
               aria-label="Next person"
               disabled={index === items.length - 1}
-              onclick={() => index++}><ChevronRight size={18} /></button
+              onclick={() => go(index + 1)}><ChevronRight size={18} /></button
             >
           </div>
         </header>
@@ -241,15 +244,15 @@
   </div>
   <div {...stylex.attrs(styles.footer)}>
     <p {...stylex.attrs(styles.summary)}>
-      {unreviewed.length
-        ? `${unreviewed.length} more ${unreviewed.length === 1 ? 'person' : 'people'} to review`
+      {upcoming
+        ? `${unreviewed.length} ${unreviewed.length === 1 ? 'person' : 'people'} left to review`
         : summary}
     </p>
     <div {...stylex.attrs(styles.actions)}>
       <button {...stylex.attrs(ui.button)} onclick={onclose}>Cancel</button>
       {#if upcoming}{@const target = upcoming}<button
           {...stylex.attrs(ui.button, ui.primary)}
-          onclick={() => (index = items.indexOf(target))}
+          onclick={() => go(items.indexOf(target))}
           >Next: {Contact.name(target.person)}<ChevronRight size={16} /></button
         >{:else}<button
           {...stylex.attrs(ui.button, ui.primary)}
