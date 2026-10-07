@@ -161,6 +161,13 @@ export const styles = stylex.create({
   photo: { display: 'block', width: 44, height: 44, borderRadius: 999, objectFit: 'cover' },
   nickname: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: tokens.muted },
   applyRow: { gridColumn: { default: '2 / -1', [media.mobile]: '1 / -1' }, marginTop: -2 },
+  appliedNote: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+    fontSize: 13,
+    color: tokens.muted
+  },
   apply: {
     padding: 0,
     borderWidth: 0,
