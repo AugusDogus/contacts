@@ -104,9 +104,7 @@
       {#if friend.kind === 'sent'}<div {...stylex.attrs(shell.closed, styles.done)} role="status">
           <span {...stylex.attrs(ui.emptyIcon)}><Check size={24} /></span>
           <h3 {...stylex.attrs(shell.pitchTitle)}>Sent to {owner}</h3>
-          <p {...stylex.attrs(shell.closedText)}>
-            The card is in People now. Open it to see everything they shared.
-          </p>
+          <p {...stylex.attrs(shell.closedText)}>All done. You can close this page.</p>
           {#if link}<button
               type="button"
               {...stylex.attrs(ui.button)}
