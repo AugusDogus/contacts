@@ -153,6 +153,8 @@ describe('private invitations', () => {
     expect((await book.saveProfile('owner', input)).ok).toBe(true);
     expect((await book.saveProfile('other', input)).ok).toBe(false);
     expect((await book.saveProfile('owner', { ...input, slug: 'admin' })).ok).toBe(false);
+    // The landing page's demo makes links on this page name.
+    expect((await book.saveProfile('owner', { ...input, slug: 'demo' })).ok).toBe(false);
     expect((await book.publicProfile('augie'))?.ownerId).toBe('owner');
   });
   test('deleting a card does not reopen its invitation', async () => {
