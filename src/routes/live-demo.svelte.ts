@@ -55,11 +55,7 @@ export class LiveDemo {
       form.required = on
         ? [...form.required, field]
         : form.required.filter((required) => required !== field);
-    else {
-      form.custom = on ? [question] : [];
-      // The form sets up answers for custom fields when it opens, so open it again.
-      if (this.friend.kind === 'form') this.friend = { ...this.friend, key: this.friend.key + 1 };
-    }
+    else form.custom = on ? [question] : [];
   }
 
   /** Shows a blank form for the current link. */
