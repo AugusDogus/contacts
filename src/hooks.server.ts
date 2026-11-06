@@ -13,9 +13,16 @@ export const handle: Handle = async ({ event, resolve }) => {
   if (building) return resolve(event);
   if (
     event.url.hostname.endsWith(`.${PUBLIC_CONTACTS_DOMAIN}`) &&
-    ['/login', '/api/auth', '/invitations', '/page', '/settings', '/google', '/export'].some(
-      (path) => event.url.pathname === path || event.url.pathname.startsWith(`${path}/`)
-    )
+    [
+      '/login',
+      '/consent',
+      '/api/auth',
+      '/invitations',
+      '/page',
+      '/settings',
+      '/google',
+      '/export'
+    ].some((path) => event.url.pathname === path || event.url.pathname.startsWith(`${path}/`))
   ) {
     redirect(303, `${BETTER_AUTH_URL}${event.url.pathname}${event.url.search}`, {
       external: [new URL(BETTER_AUTH_URL).origin]
