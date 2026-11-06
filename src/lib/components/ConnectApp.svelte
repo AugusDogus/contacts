@@ -6,31 +6,32 @@
   import { styles } from './ConnectApp.stylex.ts';
   let { url, title }: { url: string; title: string } = $props();
 
-  // None of these apps accepts a link that prefills a connector yet, so each button copies the
-  // MCP link and opens the page where it is pasted. Connectors added on the web also reach the
-  // desktop apps.
+  // None of these apps accepts a link that prefills a connector yet, so picking one copies the
+  // MCP link and shows the steps here first. The person opens the app from step 2, and the steps
+  // stay on this page when they switch back. Connectors added on the web also reach the desktop
+  // apps.
   const targets = [
     {
       id: 'claude',
       name: 'Claude',
       href: 'https://claude.ai/customize/connectors',
-      steps: 'choose Add, then Custom, then Web, and paste the link.'
+      steps: 'Choose Add, then Custom, then Web. Paste the link and approve access.'
     },
     {
       id: 'chatgpt',
       name: 'ChatGPT',
       href: 'https://chatgpt.com/plugins',
-      steps: 'choose +, then Add custom MCP server, and paste the link.'
+      steps: 'Choose +, then Add custom MCP server. Paste the link and approve access.'
     },
     {
       id: 'grok',
       name: 'Grok',
       href: 'https://grok.com/connectors',
-      steps: 'choose New Connector, then Custom, and paste the link.'
+      steps: 'Choose New Connector, then Custom. Paste the link and approve access.'
     }
   ] as const;
   type Target = (typeof targets)[number];
-  let opened = $state<Target | null>(null);
+  let selected = $state<{ target: Target; copied: boolean } | null>(null);
   let copied = $state(false);
 
   async function copy() {
@@ -46,29 +47,36 @@
   async function copyLink() {
     if (await copy()) notify('Link copied');
   }
-  // The link opens the app itself; copying runs in the same click so the browser allows it.
-  async function openTarget(target: Target) {
-    opened = (await copy()) ? target : null;
+  async function select(target: Target) {
+    selected = { target, copied: await copy() };
   }
 </script>
 
 <div {...stylex.attrs(styles.connect)}>
   <p {...stylex.attrs(styles.title)}>{title}</p>
-  <p {...stylex.attrs(styles.detail)}>
-    Pick an app to copy your link and open the page where you add it.
-  </p>
+  <p {...stylex.attrs(styles.detail)}>Pick the app you use to see how to add it.</p>
   <div {...stylex.attrs(styles.targets)}>
-    {#each targets as target (target.id)}<a
-        {...stylex.attrs(ui.button, ui.small, styles.target)}
-        href={target.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        onclick={() => openTarget(target)}>Add to {target.name}<ArrowUpRight size={14} /></a
+    {#each targets as target (target.id)}<button
+        {...stylex.attrs(ui.button, ui.small, selected?.target.id === target.id && styles.targetOn)}
+        aria-pressed={selected?.target.id === target.id}
+        onclick={() => select(target)}>{target.name}</button
       >{/each}
   </div>
-  {#if opened}<p {...stylex.attrs(styles.steps)} role="status">
-      Link copied. In {opened.name}, {opened.steps}
-    </p>{/if}
+  {#if selected}<ol
+      {...stylex.attrs(styles.steps)}
+      aria-label="How to add it to {selected.target.name}"
+    >
+      <li>{selected.copied ? 'Your link is copied.' : 'Copy your link below.'}</li>
+      <li>
+        <a href={selected.target.href} target="_blank" rel="noopener noreferrer"
+          >Open {selected.target.name}’s connector settings<ArrowUpRight
+            size={13}
+            {...stylex.attrs(styles.external)}
+          /></a
+        >
+      </li>
+      <li>{selected.target.steps}</li>
+    </ol>{/if}
   <p {...stylex.attrs(styles.detail, styles.other)}>
     Using another app? Add this link as an MCP server:
   </p>

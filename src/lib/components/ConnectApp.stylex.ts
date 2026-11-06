@@ -15,17 +15,23 @@ export const styles = stylex.create({
   title: { fontWeight: 500 },
   detail: { fontSize: 13, color: tokens.muted },
   targets: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  // Links styled as buttons; without this they take the global link color.
-  target: { color: tokens.ink, textDecoration: 'none' },
+  targetOn: { borderColor: tokens.blue, color: tokens.blue },
   steps: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
     marginTop: 12,
+    marginBottom: 0,
     fontSize: 13,
     color: tokens.ink,
     backgroundColor: tokens.blueSoft,
     borderRadius: 8,
-    paddingBlock: 8,
-    paddingInline: 12
+    paddingBlock: 10,
+    paddingLeft: 30,
+    paddingRight: 12,
+    listStyleType: 'decimal'
   },
+  external: { verticalAlign: '-2px', marginLeft: 2 },
   other: { marginTop: 16 },
   link: {
     display: 'flex',
