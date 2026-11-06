@@ -5,6 +5,7 @@
   import PageMeta from '#lib/components/PageMeta.svelte';
   import LiveStep from './LiveStep.svelte';
   import { LiveDemo } from './live-demo.svelte.ts';
+  import type { RequirableField } from '#lib/form-config.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let start = $derived(
@@ -74,17 +75,21 @@
       text: 'Download a vCard, or add to Google Contacts without making duplicates.'
     }
   ] as const;
-  const fields = [
+  // Fields with a key switch between optional and required in the demo book.
+  const fields: (
+    | { name: string; state: string; on: boolean }
+    | { name: string; key: RequirableField | 'question' }
+  )[] = [
     { name: 'Name', state: 'Required', on: true },
     { name: 'Email or phone', state: 'One required', on: true },
-    { name: 'Address', state: 'Optional', on: false },
-    { name: 'Birthday', state: 'Optional', on: false },
-    { name: 'Photo', state: 'Optional', on: false },
-    { name: 'Pronouns', state: 'Optional', on: false },
-    { name: 'Company', state: 'Optional', on: false },
-    { name: 'Website', state: 'Optional', on: false },
-    { name: 'Notes', state: 'Optional', on: false },
-    { name: 'Your own questions', state: 'Optional', on: false }
+    { name: 'Address', key: 'address' },
+    { name: 'Birthday', key: 'birthday' },
+    { name: 'Photo', key: 'photo' },
+    { name: 'Pronouns', key: 'pronouns' },
+    { name: 'Company', key: 'company' },
+    { name: 'Website', key: 'website' },
+    { name: 'Notes', key: 'notes' },
+    { name: 'Your own questions', key: 'question' }
   ];
   const questions = [
     {
@@ -165,7 +170,7 @@
       </div>
     </section>
 
-    <section {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
+    <section id="fields" {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
       <div {...stylex.attrs(s.container, s.split)}>
         <div {...stylex.attrs(s.splitHead)}>
           <h2 id="fields-title" {...stylex.attrs(s.h2)}>You choose what they share</h2>
@@ -176,9 +181,16 @@
         </div>
         <ul {...stylex.attrs(s.ruled)} aria-label="Fields friends can fill in">
           {#each fields as field (field.name)}<li {...stylex.attrs(s.row)}>
-              {field.name}<span {...stylex.attrs(s.tag, field.on ? s.tagOn : s.tagOut)}
-                >{field.state}</span
-              >
+              {field.name}{#if 'key' in field}{@const key = field.key}{@const on =
+                  demo.requires(key)}<button
+                  type="button"
+                  {...stylex.attrs(s.tag, s.tagButton, on ? s.tagOn : s.tagOut)}
+                  aria-label="{field.name} required"
+                  aria-pressed={on}
+                  onclick={() => demo.require(key, !on)}>{on ? 'Required' : 'Optional'}</button
+                >{:else}<span {...stylex.attrs(s.tag, field.on ? s.tagOn : s.tagOut)}
+                  >{field.state}</span
+                >{/if}
             </li>{/each}
         </ul>
       </div>

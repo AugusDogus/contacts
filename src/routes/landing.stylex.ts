@@ -312,10 +312,24 @@ export const s = stylex.create({
     fontWeight: 600,
     whiteSpace: 'nowrap'
   },
+  // Optional and Required switch the demo's form, so they're buttons.
+  tagButton: {
+    minHeight: 32,
+    borderWidth: 0,
+    fontFamily: ink.body,
+    cursor: 'pointer',
+    transition: `background-color ${ink.durMicro} ${ink.easeOut}, color ${ink.durMicro} ${ink.easeOut}`,
+    outline: { default: null, ':focus-visible': `2px solid ${ink.focus}` },
+    outlineOffset: 2
+  },
   tagOn: { backgroundColor: ink.ink, color: ink.onInk },
   tagOut: {
-    color: ink.muted,
-    boxShadow: `inset 0 0 0 1px ${ink.rule}`
+    color: { default: ink.muted, [at.hover]: { ':hover': ink.ink } },
+    backgroundColor: 'transparent',
+    boxShadow: {
+      default: `inset 0 0 0 1px ${ink.rule}`,
+      [at.hover]: { ':hover': `inset 0 0 0 1px ${ink.ink}` }
+    }
   },
 
   // Questions as rows.

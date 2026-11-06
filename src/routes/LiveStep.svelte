@@ -17,7 +17,7 @@
   let invite = $state(0);
 </script>
 
-<div {...stylex.attrs(styles.live, step === 'friend' && styles.scroll)}>
+<div {...stylex.attrs(styles.live)}>
   {#if step === 'invite'}{#key invite}<InviteDialog
         inline
         form={demo.book.profile.form}
@@ -46,6 +46,7 @@
             initial={demo.friend.draft}
             recipient={owner}
             config={demo.book.profile.form}
+            essentials
             onsave={async (contact) => demo.send(contact)}
           />{/key}
       </div>{:else}<div {...stylex.attrs(shell.closed, styles.done)}>

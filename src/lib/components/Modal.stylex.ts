@@ -25,13 +25,16 @@ export const styles = stylex.create({
       animationTimingFunction: tokens.easeOut
     }
   },
+  // A card in the page: no lift, since nothing sits behind it.
   inline: {
     display: 'block',
     position: 'static',
     width: '100%',
     maxWidth: 460,
     marginInline: 'auto',
-    backgroundColor: tokens.paper
+    backgroundColor: tokens.paper,
+    boxShadow: `0 0 0 1px ${tokens.line}, 0 1px 2px #1e23300a`,
+    animationName: 'none'
   },
   wide: { width: 'min(640px, calc(100vw - 24px))' },
   large: { width: 'min(920px, calc(100vw - 24px))' },

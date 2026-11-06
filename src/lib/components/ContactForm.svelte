@@ -19,6 +19,7 @@
     recipient,
     config,
     buttonLabel = 'Save',
+    essentials = false,
     onsave
   }: {
     initial?: ContactInput;
@@ -26,6 +27,8 @@
     /** The owner's requirements. Omitted when people edit their own saved card. */
     config?: FormConfig;
     buttonLabel?: string;
+    /** Only the photo, name, email and phone, plus what the owner requires. Keeps the demo short. */
+    essentials?: boolean;
     onsave: (contact: ContactInput) => Promise<Result>;
   } = $props();
   let value = $state<ContactInput>(
@@ -36,6 +39,13 @@
   );
   const req = (field: TextField) => Boolean(config && FormConfig.requires(config, field));
   const idFor = (field: string) => `contact-${field}`;
+  const shows = (field: TextField) => !essentials || req(field);
+  const showsCustom = (id: string) =>
+    !essentials || Boolean(config?.custom.find((field) => field.id === id)?.required);
+  let showsMore = $derived(
+    (['birthday', 'pronouns', 'company', 'website', 'notes'] as const).some(shows) ||
+      value.custom.some(({ id }) => showsCustom(id))
+  );
   let busy = $state(false);
   let photoBusy = $state(false);
   let error = $state('');
@@ -275,147 +285,153 @@
       {/snippet}
     </Field>
   </div>
-  <fieldset {...stylex.attrs(styles.section)}>
-    <legend {...stylex.attrs(styles.sectionTitle)}
-      >Address{#if req('street')}<span {...stylex.attrs(styles.required)}>required</span
-        >{/if}</legend
-    >
-    <div {...stylex.attrs(ui.formGrid)}>
-      <Field
-        id={idFor('country')}
-        label="Country"
-        required={req('country')}
-        error={problem('country')}
-        wide
+  {#if shows('street')}<fieldset {...stylex.attrs(styles.section)}>
+      <legend {...stylex.attrs(styles.sectionTitle)}
+        >Address{#if req('street')}<span {...stylex.attrs(styles.required)}>required</span
+          >{/if}</legend
       >
-        {#snippet children({ id, invalid, describedby })}
-          <select
-            {...stylex.attrs(
-              ui.input,
-              styles.control,
-              styles.select,
-              invalid && ui.invalid,
-              !value.country && styles.placeholder
-            )}
-            {id}
-            name="country"
-            autocomplete="country-name"
-            aria-invalid={invalid || undefined}
-            aria-describedby={describedby}
-            bind:value={value.country}
-          >
-            <option value="">Select a country</option>
-            {#if legacyCountry}<option value={legacyCountry}>{legacyCountry}</option>{/if}
-            {#each Address.countries as country (country.code)}<option value={country.name}
-                >{country.name}</option
-              >{/each}
-          </select>
-        {/snippet}
-      </Field>
-      {@render text(
-        'street',
-        'Street address',
-        { autocomplete: 'address-line1', maxlength: '200' },
-        { wide: true }
-      )}
-      {@render text(
-        'street2',
-        'Apartment, suite, or unit',
-        { autocomplete: 'address-line2', maxlength: '200' },
-        { wide: true }
-      )}
-      <div {...stylex.attrs(styles.localityRow)}>
-        {@render text(
-          'city',
-          'City',
-          { autocomplete: 'address-level2', maxlength: '100' },
-          { stretchOnMobile: true }
-        )}
-        {@render text('region', labels.region, {
-          autocomplete: 'address-level1',
-          maxlength: '100'
-        })}
-        {@render text('postalCode', labels.postal, {
-          autocomplete: 'postal-code',
-          maxlength: '30',
-          autocapitalize: 'characters'
-        })}
-      </div>
-    </div>
-  </fieldset>
-  <fieldset {...stylex.attrs(styles.section)}>
-    <legend {...stylex.attrs(styles.sectionTitle)}>More</legend>
-    <div {...stylex.attrs(ui.formGrid)}>
-      {#each value.custom as answer (answer.id)}<Field
-          id={idFor(`custom-${answer.id}`)}
-          label={answer.label}
-          required={Boolean(config?.custom.find((field) => field.id === answer.id)?.required)}
-          error={problem(`custom-${answer.id}`)}
+      <div {...stylex.attrs(ui.formGrid)}>
+        <Field
+          id={idFor('country')}
+          label="Country"
+          required={req('country')}
+          error={problem('country')}
           wide
         >
           {#snippet children({ id, invalid, describedby })}
-            <input
-              {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+            <select
+              {...stylex.attrs(
+                ui.input,
+                styles.control,
+                styles.select,
+                invalid && ui.invalid,
+                !value.country && styles.placeholder
+              )}
               {id}
-              name="custom-{answer.id}"
-              maxlength="200"
+              name="country"
+              autocomplete="country-name"
               aria-invalid={invalid || undefined}
               aria-describedby={describedby}
-              bind:value={answer.value}
-            />
+              bind:value={value.country}
+            >
+              <option value="">Select a country</option>
+              {#if legacyCountry}<option value={legacyCountry}>{legacyCountry}</option>{/if}
+              {#each Address.countries as country (country.code)}<option value={country.name}
+                  >{country.name}</option
+                >{/each}
+            </select>
           {/snippet}
-        </Field>{/each}
-      <Field
-        id={idFor('birthday')}
-        label="Birthday"
-        required={req('birthday')}
-        error={problem('birthday')}
-      >
-        {#snippet children({ id, invalid, describedby })}
-          <BirthdayPicker
-            {id}
-            value={value.birthday}
-            {invalid}
-            {describedby}
-            onchange={(next) => {
-              value.birthday = next;
-              if (issue?.field === 'birthday') issue = null;
-            }}
-          />
-        {/snippet}
-      </Field>
-      {@render text('pronouns', 'Pronouns', { maxlength: '60', placeholder: 'e.g. she/her' })}
-      {@render text('company', 'Company', { autocomplete: 'organization', maxlength: '100' })}
-      {@render text('website', 'Website', {
-        type: 'url',
-        inputmode: 'url',
-        autocomplete: 'url',
-        autocapitalize: 'none',
-        spellcheck: false,
-        maxlength: '500',
-        placeholder: 'https://'
-      })}
-      <Field
-        id={idFor('notes')}
-        label="Notes"
-        required={req('notes')}
-        error={problem('notes')}
-        wide
-      >
-        {#snippet children({ id, invalid, describedby })}
-          <textarea
-            {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
-            {id}
-            name="notes"
-            maxlength="2000"
-            rows="2"
-            aria-invalid={invalid || undefined}
-            aria-describedby={describedby}
-            bind:value={value.notes}></textarea>
-        {/snippet}
-      </Field>
-    </div>
-  </fieldset>
+        </Field>
+        {@render text(
+          'street',
+          'Street address',
+          { autocomplete: 'address-line1', maxlength: '200' },
+          { wide: true }
+        )}
+        {@render text(
+          'street2',
+          'Apartment, suite, or unit',
+          { autocomplete: 'address-line2', maxlength: '200' },
+          { wide: true }
+        )}
+        <div {...stylex.attrs(styles.localityRow)}>
+          {@render text(
+            'city',
+            'City',
+            { autocomplete: 'address-level2', maxlength: '100' },
+            { stretchOnMobile: true }
+          )}
+          {@render text('region', labels.region, {
+            autocomplete: 'address-level1',
+            maxlength: '100'
+          })}
+          {@render text('postalCode', labels.postal, {
+            autocomplete: 'postal-code',
+            maxlength: '30',
+            autocapitalize: 'characters'
+          })}
+        </div>
+      </div>
+    </fieldset>{/if}
+  {#if showsMore}<fieldset {...stylex.attrs(styles.section)}>
+      <legend {...stylex.attrs(styles.sectionTitle)}>More</legend>
+      <div {...stylex.attrs(ui.formGrid)}>
+        {#each value.custom.filter(({ id }) => showsCustom(id)) as answer (answer.id)}<Field
+            id={idFor(`custom-${answer.id}`)}
+            label={answer.label}
+            required={Boolean(config?.custom.find((field) => field.id === answer.id)?.required)}
+            error={problem(`custom-${answer.id}`)}
+            wide
+          >
+            {#snippet children({ id, invalid, describedby })}
+              <input
+                {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+                {id}
+                name="custom-{answer.id}"
+                maxlength="200"
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedby}
+                bind:value={answer.value}
+              />
+            {/snippet}
+          </Field>{/each}
+        {#if shows('birthday')}<Field
+            id={idFor('birthday')}
+            label="Birthday"
+            required={req('birthday')}
+            error={problem('birthday')}
+          >
+            {#snippet children({ id, invalid, describedby })}
+              <BirthdayPicker
+                {id}
+                value={value.birthday}
+                {invalid}
+                {describedby}
+                onchange={(next) => {
+                  value.birthday = next;
+                  if (issue?.field === 'birthday') issue = null;
+                }}
+              />
+            {/snippet}
+          </Field>{/if}
+        {#if shows('pronouns')}{@render text('pronouns', 'Pronouns', {
+            maxlength: '60',
+            placeholder: 'e.g. she/her'
+          })}{/if}
+        {#if shows('company')}{@render text('company', 'Company', {
+            autocomplete: 'organization',
+            maxlength: '100'
+          })}{/if}
+        {#if shows('website')}{@render text('website', 'Website', {
+            type: 'url',
+            inputmode: 'url',
+            autocomplete: 'url',
+            autocapitalize: 'none',
+            spellcheck: false,
+            maxlength: '500',
+            placeholder: 'https://'
+          })}{/if}
+        {#if shows('notes')}<Field
+            id={idFor('notes')}
+            label="Notes"
+            required={req('notes')}
+            error={problem('notes')}
+            wide
+          >
+            {#snippet children({ id, invalid, describedby })}
+              <textarea
+                {...stylex.attrs(ui.input, styles.control, invalid && ui.invalid)}
+                {id}
+                name="notes"
+                maxlength="2000"
+                rows="2"
+                aria-invalid={invalid || undefined}
+                aria-describedby={describedby}
+                bind:value={value.notes}></textarea>
+            {/snippet}
+          </Field>{/if}
+      </div>
+    </fieldset>{/if}
   {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
   <div {...stylex.attrs(styles.submit)}>
     <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={!ready || busy || photoBusy}
