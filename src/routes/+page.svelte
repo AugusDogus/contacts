@@ -2,6 +2,7 @@
   import * as stylex from '@stylexjs/stylex';
   import { s } from './landing.stylex.ts';
   import PageMeta from '#lib/components/PageMeta.svelte';
+  import LiveDemo from './LiveDemo.svelte';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let start = $derived(
@@ -47,40 +48,6 @@
     }
   }
 
-  const steps = [
-    {
-      image: 'invite',
-      wide: { width: 1200, height: 798 },
-      phone: { width: 780, height: 674 },
-      title: 'Name a link',
-      text: 'Make one for each person. It works once and expires after 30 days.',
-      alt: 'The New invitation dialog, with the name Maya typed in above a Create link button.'
-    },
-    {
-      image: 'friend',
-      wide: { width: 1200, height: 1213 },
-      phone: { width: 780, height: 1204 },
-      title: 'They fill in their card',
-      text: 'No account or app. They add their photo, email, phone and more.',
-      alt: 'The form a friend sees, titled Share your details with Robin, filled in with a photo, the name Maya Brooks, an email and a phone number.'
-    },
-    {
-      image: 'people',
-      wide: { width: 1200, height: 1000 },
-      phone: { width: 780, height: 1058 },
-      title: 'It lands in People',
-      text: 'Search everyone who replied, and see who you’re still waiting on.',
-      alt: 'The People page, with three links still waiting and the newest contacts listed below.'
-    },
-    {
-      image: 'export',
-      wide: { width: 1200, height: 522 },
-      phone: { width: 780, height: 833 },
-      title: 'Add them to your phone',
-      text: 'Download a vCard, or add to Google Contacts without making duplicates.',
-      alt: 'The Export page, offering Google Contacts or a vCard file for Apple Contacts and Outlook.'
-    }
-  ];
   const fields = [
     { name: 'Name', state: 'Required', on: true },
     { name: 'Email or phone', state: 'One required', on: true },
@@ -123,7 +90,7 @@
         ><img src="/favicon.svg" alt="" width="28" height="28" />Contacts Exchange</a
       >
       <ul {...stylex.attrs(s.navLinks)}>
-        <li><a {...stylex.attrs(s.navLink)} href="#how">How it works</a></li>
+        <li><a {...stylex.attrs(s.navLink)} href="#try">Try it</a></li>
         <li><a {...stylex.attrs(s.navLink)} href="#questions">Questions</a></li>
       </ul>
       {#if !data.signedIn}<a {...stylex.attrs(s.navLink, s.navSignIn)} href="/login?signin"
@@ -149,46 +116,24 @@
       </div>
     </section>
 
-    <section id="how" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="how-title">
-      <div {...stylex.attrs(s.container, s.stack)}>
-        <div {...stylex.attrs(s.pane)}>
-          <h2 id="how-title" {...stylex.attrs(s.h2)}>From one link to your phone</h2>
+    <section id="try" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="try-title">
+      <div {...stylex.attrs(s.container, s.tryIt)}>
+        <div {...stylex.attrs(s.tryHead)}>
+          <h2 id="try-title" {...stylex.attrs(s.h2)}>Try it here</h2>
           <p {...stylex.attrs(s.body)}>
-            No more copying addresses out of texts. Each person fills in their own card.
+            This is the real app with pretend people. Nothing you type leaves this page.
           </p>
-          <a {...stylex.attrs(s.button)} href={start.href}>{start.label}</a>
+          <ol {...stylex.attrs(s.trySteps)}>
+            <li>Press Invite and name a link.</li>
+            <li>Fill in your friend’s side.</li>
+            <li>Open their card in People.</li>
+          </ol>
         </div>
-        <ol {...stylex.attrs(s.captures)}>
-          {#each steps as step, index (step.image)}<li>
-              <figure {...stylex.attrs(s.figure)}>
-                <picture {...stylex.attrs(s.shot)}>
-                  <source
-                    media="(max-width: 40rem)"
-                    srcset="/landing/{step.image}-phone.webp"
-                    width={step.phone.width}
-                    height={step.phone.height}
-                  />
-                  <img
-                    {...stylex.attrs(s.shotImg)}
-                    src="/landing/{step.image}-wide.webp"
-                    alt={step.alt}
-                    width={step.wide.width}
-                    height={step.wide.height}
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    decoding="async"
-                  />
-                </picture>
-                <figcaption {...stylex.attrs(s.caption)}>
-                  <h3 {...stylex.attrs(s.h3)}>{step.title}</h3>
-                  <p {...stylex.attrs(s.body)}>{step.text}</p>
-                </figcaption>
-              </figure>
-            </li>{/each}
-        </ol>
+        <LiveDemo origin={data.appUrl} />
       </div>
     </section>
 
-    <section {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
+    <section id="fields" {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
       <div {...stylex.attrs(s.container, s.split)}>
         <div {...stylex.attrs(s.splitHead)}>
           <h2 id="fields-title" {...stylex.attrs(s.h2)}>You choose what they share</h2>
