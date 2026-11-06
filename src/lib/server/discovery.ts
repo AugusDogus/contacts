@@ -45,8 +45,15 @@ export const McpServerInfo = {
 
 const credentialId = 'contacts_exchange_account';
 const mcpUrl = (origin: string) => `${origin}/mcp`;
+/** The otter logo, as an SVG for any size and a PNG for clients that do not render SVG. */
+const icons = (origin: string) => [
+  { src: `${origin}/favicon.svg`, mimeType: 'image/svg+xml', sizes: ['any'] },
+  { src: `${origin}/icon-512.png`, mimeType: 'image/png', sizes: ['512x512'] }
+];
 
 export const Discovery = {
+  icons,
+
   integrations(origin: string): IntegrationsDocument {
     const basis: Declared = { via: 'declared', source: `${origin}/.well-known/integrations.json` };
     return {
@@ -91,7 +98,7 @@ export const Discovery = {
       description:
         'Read your address book, create invitation links, and edit your own contact card.',
       websiteUrl: origin,
-      icons: [{ src: `${origin}/favicon.svg`, mimeType: 'image/svg+xml', sizes: ['any'] }],
+      icons: icons(origin),
       remotes: [{ type: 'streamable-http', url: mcpUrl(origin) }],
       url: mcpUrl(origin),
       transport: 'streamable-http',

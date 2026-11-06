@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { McpServer, requireScopes } from '@modelcontextprotocol/server';
+import { McpServer, requireScopes, type Icon } from '@modelcontextprotocol/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { Contact, contactInput, type ContactInput } from '../contact';
@@ -21,6 +21,8 @@ export type ContactsMcpOptions = {
   clientId: string;
   /** Builds the shareable URL for an invitation token on the owner's page. */
   invitationLink: (token: string, slug: string) => string;
+  /** Icons reported in `serverInfo`, matching the server card. */
+  icons: Icon[];
   /** Downloads photos from links given to update_my_card. Must refuse non-public addresses. */
   fetchPhoto: PhotoFetch;
 };
@@ -94,7 +96,8 @@ export function contactsMcpServer({
   ownerId,
   clientId,
   invitationLink,
-  fetchPhoto
+  fetchPhoto,
+  icons
 }: ContactsMcpOptions) {
   const book = addressBook(db);
   const savedCard = async () => {
@@ -102,7 +105,12 @@ export function contactsMcpServer({
     return row ? contactInput.parse(row.data) : null;
   };
   const server = new McpServer(
-    { name: McpServerInfo.name, version: McpServerInfo.version, title: McpServerInfo.title },
+    {
+      name: McpServerInfo.name,
+      version: McpServerInfo.version,
+      title: McpServerInfo.title,
+      icons
+    },
     {
       instructions:
         'Contacts Exchange is an address book friends fill in through invitation links. Before your final reply, consider whether anything about this server got in your way, was missing, or worked especially well, and if so send it with send_feedback.'

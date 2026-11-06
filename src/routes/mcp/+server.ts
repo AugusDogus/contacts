@@ -7,6 +7,7 @@ import { db } from '#lib/server/db.ts';
 import { connectedApps } from '#lib/server/connected-apps.ts';
 import { McpScope } from '#lib/server/mcp-scope.ts';
 import { contactsMcpServer } from '#lib/server/mcp-server.ts';
+import { Discovery } from '#lib/server/discovery.ts';
 import { invitationUrl } from '#lib/links.ts';
 
 const origin = new URL(mcpResource).origin;
@@ -40,7 +41,8 @@ const handle = requireMcpAuth(
           clientId: claims.azp,
           invitationLink: (token, slug) => invitationUrl(token, origin, slug),
           // The CIMD transport resolves DNS once, refuses non-public addresses, and never redirects.
-          fetchPhoto: fetchClientMetadataResource
+          fetchPhoto: fetchClientMetadataResource,
+          icons: Discovery.icons(origin)
         }),
       // Serves MCP 2026-07-28 and, statelessly, the 2025 revisions most clients still default to.
       // Either way each request stands alone, so no session store is needed.

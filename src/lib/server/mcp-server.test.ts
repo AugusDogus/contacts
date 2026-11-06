@@ -33,6 +33,7 @@ async function setup() {
       db,
       ownerId,
       clientId: 'test-client',
+      icons: [{ src: 'https://example.test/icon.png', mimeType: 'image/png', sizes: ['512x512'] }],
       // Serves a generated PNG for any URL, standing in for the SSRF-safe production fetcher.
       fetchPhoto: async () =>
         new Response(
@@ -57,7 +58,7 @@ async function setup() {
       const text = content?.type === 'text' ? String(content.text) : '';
       return { isError: Boolean('isError' in result && result.isError), text };
     };
-    return { call };
+    return { call, serverInfo: client.getServerVersion() };
   };
   return { db, book, owner, add, connect };
 }
@@ -213,6 +214,16 @@ describe('contacts MCP server', () => {
       expect((await stored(db, 'owner'))?.photo).toStartWith('data:image/jpeg;base64,');
       expect((await call('update_my_card', { photoUrl: null })).isError).toBe(false);
       expect(await stored(db, 'owner')).toMatchObject({ photo: '', firstName: 'Augie' });
+    });
+  });
+
+  test('reports its identity and icons in serverInfo, matching the server card', async () => {
+    const { connect } = await setup();
+    const { serverInfo } = await connect('owner');
+    expect(serverInfo).toMatchObject({
+      name: 'exchange.contacts/address-book',
+      title: 'Contacts Exchange',
+      icons: [{ src: 'https://example.test/icon.png', mimeType: 'image/png', sizes: ['512x512'] }]
     });
   });
 });

@@ -46,6 +46,10 @@ describe('integrations.sh discovery documents', () => {
     expect(card.name).toMatch(/^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/);
     expect(card.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(card.description.length).toBeLessThanOrEqual(100);
+    expect(card.icons).toEqual([
+      { src: `${origin}/favicon.svg`, mimeType: 'image/svg+xml', sizes: ['any'] },
+      { src: `${origin}/icon-512.png`, mimeType: 'image/png', sizes: ['512x512'] }
+    ]);
   });
 
   test('the AI catalog points at the server card hosted under the MCP endpoint', () => {
