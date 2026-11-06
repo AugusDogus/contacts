@@ -30,7 +30,8 @@
           result.error.message || 'That didn’t work. Check your email and password and try again.';
         return;
       }
-      if (!google) window.location.href = callbackURL;
+      // During an app authorization the auth client follows the redirect it returns.
+      if (!google && !data.authorizing) window.location.href = callbackURL;
     } catch {
       error = 'Couldn’t reach the sign-in service. Check your connection and try again.';
     } finally {
@@ -50,7 +51,9 @@
     <h1 {...stylex.attrs(styles.title)}>
       {mode === 'signup' ? 'Create your address book' : 'Welcome back'}
     </h1>
-    {#if data.claim}<p {...stylex.attrs(styles.intro)}>
+    {#if data.authorizing}<p {...stylex.attrs(styles.intro)}>
+        Sign in to connect an app to your address book.
+      </p>{:else if data.claim}<p {...stylex.attrs(styles.intro)}>
         Sign up to keep the card you just sent.
       </p>{/if}
     <div {...stylex.attrs(styles.methods)}>
