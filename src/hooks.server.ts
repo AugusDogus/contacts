@@ -2,6 +2,7 @@ import { building, dev } from '$app/env';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import type { Handle } from '@sveltejs/kit/hooks';
 import { auth } from '#lib/server/auth.ts';
+import { Csrf } from '#lib/server/csrf.ts';
 import { addressBook } from '#lib/server/address-book.ts';
 import { db } from '#lib/server/db.ts';
 import { createDemo } from '#lib/server/demo.ts';
@@ -11,6 +12,8 @@ import { BETTER_AUTH_URL } from '$app/env/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
   if (building) return resolve(event);
+  // Replaces SvelteKit's own check, which also blocked OAuth token exchanges; see csrf.ts.
+  if (!dev && Csrf.isForbidden(event.request)) return Csrf.response(event.request);
   if (
     event.url.hostname.endsWith(`.${PUBLIC_CONTACTS_DOMAIN}`) &&
     [
