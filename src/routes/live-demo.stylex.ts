@@ -2,47 +2,19 @@ import * as stylex from '@stylexjs/stylex';
 import { ink, at } from './landing-tokens.stylex';
 import { tokens } from '#lib/tokens.stylex.ts';
 
-// The two windows around the live demo. Inside them, the app keeps its own tokens.
+// Where a capture used to sit: the app's own background, framed like the image was.
 export const styles = stylex.create({
-  stage: {
-    display: 'grid',
-    gridTemplateColumns: {
-      default: 'minmax(0, 1fr) minmax(0, 1fr)',
-      [at.stack]: 'minmax(0, 1fr)'
-    },
-    gap: { default: 24, [at.phone]: 32 },
-    alignItems: 'start'
-  },
-  window: {
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: ink.rule,
-    borderRadius: ink.radiusCard,
-    overflow: 'hidden',
-    backgroundColor: tokens.surface,
-    boxShadow: '0 1px 2px #1e23300a, 0 12px 32px -12px #1e23301f'
-  },
-  bar: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    minHeight: 52,
-    margin: 0,
-    paddingBlock: 8,
-    paddingInline: 16,
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: ink.rule,
-    backgroundColor: ink.paper,
+  live: {
+    // On phones the app gets the well's full width, as the phone captures did.
+    padding: { default: 20, [at.phone]: 0 },
+    borderRadius: 8,
+    outline: { default: `1px solid ${ink.rule}`, [at.phone]: 'none' },
+    outlineOffset: -1,
+    backgroundColor: { default: tokens.surface, [at.phone]: 'transparent' },
     fontSize: 15,
-    fontWeight: 600,
-    color: ink.ink
+    lineHeight: 1.5
   },
-  screen: {
-    height: { default: 680, [at.stack]: 'auto' },
-    overflowY: 'auto',
-    padding: ink.wellPad
-  },
+  // The friend's form is long, so it scrolls in place beside the pinned pane.
+  scroll: { maxHeight: { default: 760, [at.phone]: 'none' }, overflowY: 'auto' },
   done: { minHeight: 320, justifyContent: 'center' }
 });

@@ -1,12 +1,12 @@
 <script lang="ts">
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
-  import { styles } from './google.stylex.ts';
-  import { ArrowLeft, Download, FileText } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import { getGoogleConnection, importToGoogle, previewExport } from '#lib/google.remote.ts';
   import { getAddressBook } from '#lib/contacts.remote.ts';
   import { authClient } from '#lib/auth-client.ts';
   import ExportReview from '#lib/components/ExportReview.svelte';
+  import ExportOptions from '#lib/components/ExportOptions.svelte';
   import ExportProgress, { type ExportStep } from '#lib/components/ExportProgress.svelte';
   import { GooglePerson, type Resolution, type Row } from '#lib/google-person.ts';
   import type { ContactInput } from '#lib/contact.ts';
@@ -169,94 +169,22 @@
   <link rel="preload" as="image" href="/export-otter.svg" /></svelte:head
 >
 <a href="/people" {...stylex.attrs(ui.back)}><ArrowLeft size={15} />People</a>
-<div {...stylex.attrs(ui.pageHeading)}><h1>Export</h1></div>
-<section {...stylex.attrs(ui.panel)} aria-label="Export options">
-  <div {...stylex.attrs(styles.row)}>
-    <span {...stylex.attrs(styles.icon)} aria-hidden="true"
-      ><svg width="18" height="18" viewBox="0 0 24 24"
-        ><path
-          fill="#4285F4"
-          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z"
-        /><path
-          fill="#34A853"
-          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
-        /><path
-          fill="#FBBC05"
-          d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84Z"
-        /><path
-          fill="#EA4335"
-          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.96 10.96 0 0 0 12 1 11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
-        /></svg
-      ></span
-    >
-    <div {...stylex.attrs(styles.text)}>
-      <h2 id="google-title" {...stylex.attrs(styles.title)}>
-        Google Contacts{#if connection.status === 'connected'}<span
-            {...stylex.attrs(ui.badge, ui.green)}>Connected</span
-          >{/if}
-      </h2>
-      <p {...stylex.attrs(styles.detail)}>
-        {#if connection.status === 'connected'}{summary}{:else if connection.status === 'unavailable'}Unavailable
-          right now. Use the file instead.{:else}Syncs to your phone through Google.{/if}
-      </p>
-    </div>
-    <div {...stylex.attrs(styles.actions)}>
-      {#if connection.status === 'connected'}<button
-          {...stylex.attrs(ui.button, ui.small)}
-          disabled={busy}
-          onclick={connect}>Reconnect</button
-        >{#if pending.length}<button
-            {...stylex.attrs(ui.button, ui.small, ui.primary)}
-            disabled={busy}
-            onclick={startExport}
-            >{busy
-              ? showing === 'progress'
-                ? 'Exporting…'
-                : 'Checking Google…'
-              : `Export ${pending.length}`}</button
-          >{/if}
-      {:else if connection.status === 'demo'}<a {...stylex.attrs(ui.button, ui.small)} href="/login"
-          >Sign up to connect</a
-        >
-      {:else if connection.status === 'disconnected'}<button
-          {...stylex.attrs(ui.button, ui.small)}
-          disabled={busy}
-          onclick={connect}>Connect</button
-        >{/if}
-    </div>
-  </div>
-  {#if error || uncertain.length}<div {...stylex.attrs(styles.notes)}>
-      {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
-      {#if uncertain.length}<div {...stylex.attrs(styles.uncertain)} role="status">
-          <p>
-            Check Google for these before adding them by hand. They won’t be retried, to avoid
-            duplicates.
-          </p>
-          <ul {...stylex.attrs(styles.uncertainList)}>
-            {#each uncertain as contact (contact.id)}<li>
-                {contact.data.firstName}
-                {contact.data.lastName}
-              </li>{/each}
-          </ul>
-        </div>{/if}
-    </div>{/if}
-  <div {...stylex.attrs(styles.row)}>
-    <span {...stylex.attrs(styles.icon)} aria-hidden="true"><FileText size={18} /></span>
-    <div {...stylex.attrs(styles.text)}>
-      <h2 {...stylex.attrs(styles.title)}>vCard file</h2>
-      <p {...stylex.attrs(styles.detail)}>For Apple Contacts, Outlook, and most apps</p>
-    </div>
-    <div {...stylex.attrs(styles.actions)}>
-      {#if book.contacts.length}<a {...stylex.attrs(ui.button, ui.small)} href="/export" download
-          ><Download size={14} />Download {book.contacts.length}</a
-        >{/if}
-    </div>
-  </div>
-</section>
-<p {...stylex.attrs(styles.fine)}>
-  Google export matches existing contacts by email, phone, or name, fills in what’s missing, and
-  asks before changing anything they already have.
-</p>
+<ExportOptions
+  status={connection.status}
+  {summary}
+  pending={pending.length}
+  {uncertain}
+  {busy}
+  {error}
+  exportLabel={busy
+    ? showing === 'progress'
+      ? 'Exporting…'
+      : 'Checking Google…'
+    : `Export ${pending.length}`}
+  vcard={{ href: '/export', count: book.contacts.length }}
+  onconnect={connect}
+  onexport={startExport}
+/>
 {#if showing === 'review' && review}<ExportReview
     items={review.items}
     created={review.created}

@@ -155,12 +155,15 @@ export const DemoBook = {
         if (index >= 0) book.contacts.splice(index, 1);
       },
       invitationUrl: linkUrl,
-      vcardHref: (contact) =>
-        `data:text/vcard;charset=utf-8,${encodeURIComponent(toVCard([contact]))}`,
+      vcardHref: (contact) => DemoBook.vcardHref([contact]),
       exportHref: null,
       formHref: '#fields'
     };
   },
+
+  /** A download of these contacts that needs no server. */
+  vcardHref: (contacts: Contact[]) =>
+    `data:text/vcard;charset=utf-8,${encodeURIComponent(toVCard(contacts))}`,
 
   /** What happens when a friend sends the form: their card joins People and the link is used. */
   submit: (book: PeopleBook, id: string, data: ContactInput, now = Date.now()): Result => {

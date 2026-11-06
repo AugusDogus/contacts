@@ -25,6 +25,14 @@ export const styles = stylex.create({
       animationTimingFunction: tokens.easeOut
     }
   },
+  inline: {
+    display: 'block',
+    position: 'static',
+    width: '100%',
+    maxWidth: 460,
+    marginInline: 'auto',
+    backgroundColor: tokens.paper
+  },
   wide: { width: 'min(640px, calc(100vw - 24px))' },
   large: { width: 'min(920px, calc(100vw - 24px))' },
   modalBody: { padding: { default: 24, [media.mobile]: 20 } },
