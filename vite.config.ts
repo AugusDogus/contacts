@@ -7,6 +7,8 @@ export default defineConfig({
   plugins: [
     sveltekit({
       adapter: adapter({ runtime: 'nodejs24.x', maxDuration: 60 }),
+      // Cross-site form protection lives in hooks.server.ts so OAuth clients can reach the token endpoint.
+      csrf: { trustedOrigins: ['*'] },
       experimental: { remoteFunctions: true },
       compilerOptions: { experimental: { async: true } }
     }),
