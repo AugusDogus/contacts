@@ -3,11 +3,15 @@ import { createMcpHandler } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { auth, mcpResource } from '#lib/server/auth.ts';
 import { db } from '#lib/server/db.ts';
+import { connectedApps } from '#lib/server/connected-apps.ts';
 import { McpScope } from '#lib/server/mcp-scope.ts';
 import { contactsMcpServer } from '#lib/server/mcp-server.ts';
 import { invitationUrl } from '#lib/links.ts';
 
 const origin = new URL(mcpResource).origin;
+const resourceMetadataUrl = `${origin}/.well-known/oauth-protected-resource/mcp`;
+const challengeScopes = [McpScope.readContacts, McpScope.writeInvitations, 'offline_access'];
+const apps = connectedApps(db);
 // Signature, issuer, audience, and expiry are already verified; these are the claims tools rely on.
 const accessToken = z.object({
   sub: z.string().min(1),
@@ -18,8 +22,10 @@ const accessToken = z.object({
 
 const handle = requireMcpAuth(
   auth,
-  (request, payload) => {
+  async (request, payload) => {
     const claims = accessToken.parse(payload);
+    // A disconnected app's access token stays cryptographically valid until it expires.
+    if (!(await apps.isConnected(claims.sub, claims.azp))) return disconnected();
     const mcp = createMcpHandler(
       () =>
         contactsMcpServer({
@@ -38,7 +44,7 @@ const handle = requireMcpAuth(
         scopes: claims.scope.split(' ').filter(Boolean),
         expiresAt: claims.exp,
         resource: new URL(mcpResource),
-        resourceMetadataUrl: `${origin}/.well-known/oauth-protected-resource/mcp`
+        resourceMetadataUrl
       }
     });
   },
@@ -46,8 +52,24 @@ const handle = requireMcpAuth(
     resource: mcpResource,
     requiredScopes: [McpScope.readContacts],
     // Clients request the challenged scopes, and refresh tokens are only issued with offline_access.
-    challengeScopes: [McpScope.readContacts, McpScope.writeInvitations, 'offline_access']
+    challengeScopes
   }
 );
+
+/** The same challenge as a missing token, so the client starts authorization again. */
+const disconnected = () =>
+  Response.json(
+    {
+      jsonrpc: '2.0',
+      error: { code: -32000, message: 'This app was disconnected from Contacts Exchange.' },
+      id: null
+    },
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Bearer error="invalid_token", error_description="The app was disconnected", resource_metadata="${resourceMetadataUrl}", scope="${challengeScopes.join(' ')}"`
+      }
+    }
+  );
 
 export const POST = ({ request }) => handle(request);

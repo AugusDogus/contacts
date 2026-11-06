@@ -6,6 +6,8 @@
   import { PUBLIC_CONTACTS_DOMAIN } from '$app/env/public';
   import { ArrowLeft } from '@lucide/svelte';
   import { getAddressBook, claimCard, saveMyCard, saveProfile } from '#lib/contacts.remote.ts';
+  import { getConnectedApps, disconnectApp } from '#lib/connected-apps.remote.ts';
+  import { page } from '$app/state';
   import ContactForm from '#lib/components/ContactForm.svelte';
   import Modal from '#lib/components/Modal.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
@@ -15,7 +17,8 @@
   import { notify, failure } from '#lib/notice.svelte.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
-  let book = $derived(await getAddressBook());
+  let [book, apps] = $derived(await Promise.all([getAddressBook(), getConnectedApps()]));
+  let disconnecting = $state('');
   let name = $state(untrack(() => book.profile.name));
   let slug = $state(untrack(() => book.profile.slug));
   let message = $state(untrack(() => book.profile.message));
@@ -56,6 +59,22 @@
       claiming = false;
     }
   }
+  async function disconnect(id: string, name: string) {
+    disconnecting = id;
+    try {
+      const result = await disconnectApp(id);
+      if (result.ok) notify(`${name} disconnected`);
+      else notify(result.message, 'error');
+    } catch (cause) {
+      failure(cause);
+    } finally {
+      disconnecting = '';
+    }
+  }
+  const access = (scopes: string[]) =>
+    scopes.includes('invitations:write') ? 'Reads contacts and creates links' : 'Reads contacts';
+  const day = (ms: number) =>
+    new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 </script>
 
 <svelte:head><title>Settings | Contacts Exchange</title></svelte:head>
@@ -155,6 +174,40 @@
         >{/if}
     </div>
   </section>
+
+  {#if book.viewer.kind === 'account'}<section
+      {...stylex.attrs(styles.section)}
+      aria-labelledby="apps-title"
+    >
+      <div {...stylex.attrs(styles.sectionHead)}>
+        <h2 id="apps-title" {...stylex.attrs(styles.title)}>Connected apps</h2>
+        <p {...stylex.attrs(styles.hint)}>AI apps that can use your address book.</p>
+      </div>
+      <div {...stylex.attrs(ui.panel)}>
+        {#each apps as app (app.id)}<div {...stylex.attrs(styles.row, styles.listRow)}>
+            <div {...stylex.attrs(styles.rowText)}>
+              <p {...stylex.attrs(styles.rowTitle)}>
+                {#if app.uri}<a href={app.uri} rel="noopener noreferrer" target="_blank"
+                    >{app.name}</a
+                  >{:else}{app.name}{/if}
+              </p>
+              <p {...stylex.attrs(styles.rowDetail)}>
+                {access(app.scopes)} · {app.lastUsedAt
+                  ? `Last used ${day(app.lastUsedAt)}`
+                  : `Connected ${day(app.connectedAt)}`}
+              </p>
+            </div>
+            <button
+              {...stylex.attrs(ui.button, ui.small, ui.danger)}
+              disabled={disconnecting === app.id}
+              onclick={() => disconnect(app.id, app.name)}
+              >{disconnecting === app.id ? 'Disconnecting…' : 'Disconnect'}</button
+            >
+          </div>{:else}<p {...stylex.attrs(styles.row, styles.rowDetail)}>
+            No apps yet. Add <code>{page.url.origin}/mcp</code> to an AI app that supports MCP.
+          </p>{/each}
+      </div>
+    </section>{/if}
 
   <section {...stylex.attrs(styles.section)} aria-labelledby="account-title">
     <div {...stylex.attrs(styles.sectionHead)}>
