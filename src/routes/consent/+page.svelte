@@ -5,6 +5,8 @@
   import { styles } from './consent.stylex.ts';
   import Brand from '#lib/components/Brand.svelte';
   import Footer from '#lib/components/Footer.svelte';
+  import Avatar from '#lib/components/Avatar.svelte';
+  import { Contact } from '#lib/contact.ts';
   import { authClient } from '#lib/auth-client.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
@@ -31,27 +33,36 @@
 <svelte:head><title>Connect {data.client.name} | Contacts Exchange</title></svelte:head>
 <div {...stylex.attrs(login.shell)}>
   <header {...stylex.attrs(login.header)}><Brand /></header>
-  <main {...stylex.attrs(login.main)}>
-    <h1 {...stylex.attrs(login.title)}>Connect {data.client.name}?</h1>
-    <p {...stylex.attrs(styles.host)}>
-      {#if data.client.uri}<a href={data.client.uri} rel="noopener noreferrer" target="_blank"
-          >{data.client.name}</a
-        >{:else}{data.client.name}{/if} will return to <strong>{data.client.redirectHost}</strong>
-    </p>
-    <ul {...stylex.attrs(styles.scopes)}>
-      {#each data.scopes as { scope, description } (scope)}<li>{description}</li>{/each}
-    </ul>
-    <p {...stylex.attrs(styles.account)}>Signed in as {data.viewer.email}</p>
-    {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
-    <div {...stylex.attrs(styles.actions)}>
-      <button
-        {...stylex.attrs(ui.button, ui.primary, ui.full)}
-        disabled={busy}
-        onclick={() => decide(true)}>Allow</button
-      >
-      <button {...stylex.attrs(ui.button, ui.full)} disabled={busy} onclick={() => decide(false)}
-        >Deny</button
-      >
+  <main {...stylex.attrs(login.main, styles.main)}>
+    <div {...stylex.attrs(ui.panel, styles.card)}>
+      <h1 {...stylex.attrs(login.title)}>Connect {data.client.name}?</h1>
+      <p {...stylex.attrs(styles.host)}>
+        {#if data.client.uri}<a href={data.client.uri} rel="noopener noreferrer" target="_blank"
+            >{data.client.name}</a
+          >{:else}{data.client.name}{/if} will return to <strong>{data.client.redirectHost}</strong>
+      </p>
+      <div {...stylex.attrs(styles.account)}>
+        <Avatar person={data.person} size={40} />
+        <div {...stylex.attrs(styles.accountText)}>
+          <p {...stylex.attrs(styles.accountName)}>{Contact.name(data.person).trim()}</p>
+          <p {...stylex.attrs(styles.accountEmail)}>{data.viewer.email}</p>
+        </div>
+      </div>
+      <p {...stylex.attrs(styles.lead)}>{data.client.name} will be able to:</p>
+      <ul {...stylex.attrs(styles.scopes)}>
+        {#each data.scopes as { scope, description } (scope)}<li>{description}</li>{/each}
+      </ul>
+      {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
+      <div {...stylex.attrs(styles.actions)}>
+        <button
+          {...stylex.attrs(ui.button, ui.primary, ui.full)}
+          disabled={busy}
+          onclick={() => decide(true)}>Allow</button
+        >
+        <button {...stylex.attrs(ui.button, ui.full)} disabled={busy} onclick={() => decide(false)}
+          >Deny</button
+        >
+      </div>
     </div>
   </main>
   <Footer />

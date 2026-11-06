@@ -1,7 +1,11 @@
 import { error, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
+import { eq } from 'drizzle-orm';
 import { auth } from '#lib/server/auth.ts';
+import { db } from '#lib/server/db.ts';
+import { savedCards, user } from '#lib/server/schema.ts';
+import { Contact, contactInput, type ContactInput } from '#lib/contact.ts';
 import { McpScope } from '#lib/server/mcp-scope.ts';
 
 const scopeDescriptions: Record<string, string> = {
@@ -13,7 +17,24 @@ const scopeDescriptions: Record<string, string> = {
   [McpScope.writeInvitations]: 'Create invitation links for you'
 };
 
-const httpsOnly = (value: string | undefined) => (value?.startsWith('https:') ? value : null);
+const httpsOnly = (value: string | null | undefined) =>
+  value?.startsWith('https:') ? value : null;
+
+/** Who is granting access: the owner's own card if they made one, else their account. */
+async function accountPerson(userId: string, fallbackName: string): Promise<ContactInput> {
+  const [account, saved] = await Promise.all([
+    db.query.user.findFirst({ where: eq(user.id, userId), columns: { name: true, image: true } }),
+    db.query.savedCards.findFirst({ where: eq(savedCards.userId, userId) })
+  ]);
+  if (saved) return contactInput.parse(saved.data);
+  const [firstName = '', ...rest] = (account?.name || fallbackName).trim().split(/\s+/);
+  return {
+    ...Contact.empty(),
+    firstName,
+    lastName: rest.join(' '),
+    photo: httpsOnly(account?.image) ?? ''
+  };
+}
 
 export const load = async ({ locals, url, request }) => {
   if (locals.viewer?.kind !== 'account') redirect(303, '/login?signin');
@@ -34,6 +55,7 @@ export const load = async ({ locals, url, request }) => {
     });
     return {
       viewer: locals.viewer,
+      person: await accountPerson(locals.viewer.id, locals.viewer.name),
       // Registrant-chosen names can impersonate anyone, so the return host is always shown too.
       client: {
         name: client.client_name || 'An unnamed app',
