@@ -32,6 +32,11 @@ export const styles = stylex.create({
   rowText: { flexGrow: 1, minWidth: 0, lineHeight: 1.35, overflowWrap: 'anywhere' },
   rowTitle: { fontWeight: 500 },
   rowDetail: { fontSize: 13, color: tokens.muted },
+  mcpUrl: {
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+    fontSize: 12,
+    color: tokens.ink
+  },
   claim: {
     marginBottom: 24,
     display: 'flex',
