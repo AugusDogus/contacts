@@ -40,8 +40,8 @@ export const Discovery = {
     const basis: Declared = { via: 'declared', source: `${origin}/.well-known/integrations.json` };
     return {
       version: 3,
-      summary:
-        'Contacts Exchange offers a remote MCP server for reading your address book, creating invitation links, and editing your own contact card, authorized with OAuth.',
+      // Registry convention: name each surface and where it lives, then how auth works.
+      summary: `Contacts Exchange exposes an OAuth-protected MCP server at \`${mcpUrl(origin)}\`; apps register themselves and the user approves access.`,
       credentials: {
         [credentialId]: {
           type: 'oauth2',

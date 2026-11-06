@@ -8,6 +8,9 @@ describe('integrations.sh discovery documents', () => {
     const doc = Discovery.integrations(origin);
     const self = `${origin}/.well-known/integrations.json`;
     expect(doc.version).toBe(3);
+    expect(doc.summary).toStartWith(
+      `Contacts Exchange exposes an OAuth-protected MCP server at \`${origin}/mcp\``
+    );
     expect(doc.surfaces).toHaveLength(1);
     const [mcp] = doc.surfaces;
     expect(mcp).toMatchObject({
