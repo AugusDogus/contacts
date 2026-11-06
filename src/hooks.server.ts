@@ -3,6 +3,7 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 import type { Handle } from '@sveltejs/kit/hooks';
 import { auth } from '#lib/server/auth.ts';
 import { Csrf } from '#lib/server/csrf.ts';
+import { PublicDocument } from '#lib/server/public-document.ts';
 import { addressBook } from '#lib/server/address-book.ts';
 import { db } from '#lib/server/db.ts';
 import { createDemo } from '#lib/server/demo.ts';
@@ -63,6 +64,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('Referrer-Policy', 'no-referrer');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Cache-Control', 'private, no-store');
+  // Public discovery documents choose their own caching; everything else is per-viewer.
+  if (!(PublicDocument.isPublicPath(event.url.pathname) && response.headers.has('Cache-Control')))
+    response.headers.set('Cache-Control', 'private, no-store');
   return response;
 };
