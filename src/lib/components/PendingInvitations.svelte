@@ -2,20 +2,22 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './PendingInvitations.stylex.ts';
-  import { page } from '$app/state';
   import { Check, Copy, Pencil, Trash2 } from '@lucide/svelte';
-  import {
-    deleteInvitation,
-    getAddressBook,
-    renameInvitation,
-    renewInvitation
-  } from '#lib/contacts.remote.ts';
+  import type { AddressBookActions, Invitation, Result } from '#lib/address-book-actions.ts';
   import { invitationReference } from '#lib/invitation-token.ts';
-  import { invitationUrl } from '#lib/links.ts';
   import { failure, notify } from '#lib/notice.svelte.ts';
-  type Invitation = Awaited<ReturnType<typeof getAddressBook>>['invitations'][number];
-  type Result = { ok: true } | { ok: false; message: string };
-  let { invitations, slug }: { invitations: Invitation[]; slug: string } = $props();
+  let {
+    invitations,
+    slug,
+    actions,
+    level
+  }: {
+    invitations: Invitation[];
+    slug: string;
+    actions: AddressBookActions;
+    /** The heading level for "Waiting on". */
+    level: 2 | 4;
+  } = $props();
   const DAY = 86_400_000;
   const COLLAPSED = 5;
   let expanded = $state(false);
@@ -50,7 +52,7 @@
   }
   async function copy(invitation: Invitation, token: string) {
     try {
-      await navigator.clipboard.writeText(invitationUrl(token, page.url.origin, slug));
+      await navigator.clipboard.writeText(actions.invitationUrl(token, slug));
       copiedId = invitation.id;
       setTimeout(() => {
         if (copiedId === invitation.id) copiedId = '';
@@ -73,14 +75,14 @@
     if (editingId !== invitation.id) return;
     editingId = '';
     if (draft.trim() === invitation.label) return;
-    void run(invitation.id, () => renameInvitation({ id: invitation.id, label: draft }));
+    void run(invitation.id, () => actions.renameInvitation({ id: invitation.id, label: draft }));
   }
 </script>
 
 <section {...stylex.attrs(styles.section)} aria-labelledby="waiting-title">
-  <h2 id="waiting-title" {...stylex.attrs(styles.title)}>
+  <svelte:element this={`h${level}`} id="waiting-title" {...stylex.attrs(styles.title)}>
     Waiting on {invitations.length}
-  </h2>
+  </svelte:element>
   <ul {...stylex.attrs(ui.panel, styles.list)}>
     {#each visible as invitation (invitation.id)}{@const expired =
         invitation.expiresAt <= Date.now()}{@const reference = invitationReference(invitation)}
@@ -119,7 +121,7 @@
               onclick={() =>
                 run(
                   invitation.id,
-                  () => renewInvitation(invitation.id),
+                  () => actions.renewInvitation(invitation.id),
                   'Link works for 30 more days'
                 )}>Renew</button
             >{:else if invitation.token}{@const token = invitation.token}<button
@@ -133,7 +135,7 @@
           {#if confirmingId === invitation.id}<button
               {...stylex.attrs(ui.button, ui.small, ui.danger)}
               disabled={busyId === invitation.id}
-              onclick={() => run(invitation.id, () => deleteInvitation(invitation.id))}
+              onclick={() => run(invitation.id, () => actions.deleteInvitation(invitation.id))}
               >Delete</button
             >{:else}<button
               {...stylex.attrs(ui.iconButton)}

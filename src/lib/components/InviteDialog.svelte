@@ -3,16 +3,19 @@
   import * as stylex from '@stylexjs/stylex';
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './InviteDialog.stylex.ts';
-  import { page } from '$app/state';
   import { Copy, Check, Plus, Minus, Share } from '@lucide/svelte';
   import Modal from './Modal.svelte';
-  import { createInvitations, getAddressBook } from '#lib/contacts.remote.ts';
-  import { invitationUrl } from '#lib/links.ts';
   import { FormConfig } from '#lib/form-config.ts';
+  import type { AddressBookActions } from '#lib/address-book-actions.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
-  let { onclose }: { onclose: () => void } = $props();
+  let {
+    form,
+    slug,
+    actions,
+    onclose
+  }: { form: FormConfig; slug: string; actions: AddressBookActions; onclose: () => void } =
+    $props();
   let count = $state(1);
-  let form = $derived((await getAddressBook()).profile.form);
   let asks = $derived(
     [
       'name',
@@ -30,16 +33,15 @@
     busy = true;
     error = '';
     try {
-      const result = await createInvitations({ count, label });
+      const result = await actions.createInvitations({ count, label });
       if (!result.ok) {
         error = result.message;
         return;
       }
-      const { profile } = await getAddressBook();
       links = result.invitations.map((i) => ({
         id: i.id,
         name: i.label ? `${i.label} #${invitationReference(i)}` : `#${invitationReference(i)}`,
-        url: invitationUrl(i.token, page.url.origin, profile.slug)
+        url: actions.invitationUrl(i.token, slug)
       }));
     } catch (cause) {
       error =
@@ -162,7 +164,7 @@
         </div>
       </div>
       <p {...stylex.attrs(styles.asks)}>
-        Required: {asks}. <a href="/settings#form" onclick={onclose}>Edit</a>
+        Required: {asks}. <a href={actions.formHref} onclick={onclose}>Edit</a>
       </p>
       {#if error}<p {...stylex.attrs(ui.formError)} role="alert">{error}</p>{/if}
       <button {...stylex.attrs(ui.button, ui.primary, ui.full)} disabled={busy}
