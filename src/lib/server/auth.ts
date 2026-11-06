@@ -10,6 +10,7 @@ import { building, dev } from '$app/env';
 import * as env from '$app/env/private';
 import { db } from './db';
 import * as schema from './schema';
+import { McpScope } from './mcp-scope';
 
 if (!dev && !building && (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL)) {
   throw new Error(
@@ -20,11 +21,6 @@ export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIEN
 const baseURL = env.BETTER_AUTH_URL || 'http://localhost:5173';
 /** The MCP endpoint. Access tokens are audience-bound to this exact URL. */
 export const mcpResource = `${baseURL}/mcp`;
-/** Scopes an MCP client can request beyond the OpenID defaults. */
-export const McpScope = {
-  readContacts: 'contacts:read',
-  writeInvitations: 'invitations:write'
-} as const;
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'sqlite', schema }),
   baseURL,
