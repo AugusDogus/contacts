@@ -9,6 +9,8 @@ import { contacts, invitations, profiles, savedCards } from './schema';
 export type Profile = typeof profiles.$inferSelect;
 export type Invitation = Omit<typeof invitations.$inferSelect, 'tokenHash'>;
 const INVITATION_LIFETIME = 30 * 86_400_000;
+/** How many unexpired, unused links an owner can have at once. */
+export const OPEN_INVITATION_LIMIT = 200;
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const reservedSlugs = new Set([
   'www',
@@ -108,6 +110,9 @@ export function addressBook(db: AppDatabase) {
   }
   async function openInvitations(ownerId: string) {
     return (await listInvitations(ownerId)).filter(({ status }) => status === 'pending');
+  }
+  async function openCount(ownerId: string) {
+    return (await openInvitations(ownerId)).filter((item) => item.expiresAt > Date.now()).length;
   }
   const ownedOpen = (ownerId: string, id: string) =>
     and(
@@ -325,6 +330,7 @@ export function addressBook(db: AppDatabase) {
     contacts: listContacts,
     invitations: listInvitations,
     openInvitations,
+    openCount,
     deleteInvitation,
     renewInvitation,
     renameInvitation,
