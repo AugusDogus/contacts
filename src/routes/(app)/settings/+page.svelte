@@ -4,13 +4,14 @@
   import { ui } from '#lib/ui.stylex.ts';
   import { styles } from './settings.stylex.ts';
   import { PUBLIC_CONTACTS_DOMAIN } from '$app/env/public';
-  import { ArrowLeft, Check, Copy } from '@lucide/svelte';
+  import { ArrowLeft } from '@lucide/svelte';
   import { getAddressBook, claimCard, saveMyCard, saveProfile } from '#lib/contacts.remote.ts';
   import { getConnectedApps, disconnectApp } from '#lib/connected-apps.remote.ts';
   import { page } from '$app/state';
   import ContactForm from '#lib/components/ContactForm.svelte';
   import Modal from '#lib/components/Modal.svelte';
   import Avatar from '#lib/components/Avatar.svelte';
+  import ConnectApp from '#lib/components/ConnectApp.svelte';
   import FormFieldsEditor from '#lib/components/FormFieldsEditor.svelte';
   import { authClient } from '#lib/auth-client.ts';
   import { Contact } from '#lib/contact.ts';
@@ -19,17 +20,6 @@
   let { data }: PageProps = $props();
   let [book, apps] = $derived(await Promise.all([getAddressBook(), getConnectedApps()]));
   let disconnecting = $state('');
-  let mcpUrl = $derived(`${page.url.origin}/mcp`);
-  let copiedMcpUrl = $state(false);
-  async function copyMcpUrl() {
-    try {
-      await navigator.clipboard.writeText(mcpUrl);
-      copiedMcpUrl = true;
-      notify('Link copied');
-    } catch (cause) {
-      failure(cause);
-    }
-  }
   let name = $state(untrack(() => book.profile.name));
   let slug = $state(untrack(() => book.profile.slug));
   let message = $state(untrack(() => book.profile.message));
@@ -219,26 +209,11 @@
               onclick={() => disconnect(app.id, app.name)}
               >{disconnecting === app.id ? 'Disconnecting…' : 'Disconnect'}</button
             >
-          </div>{:else}<div {...stylex.attrs(styles.empty)}>
-            <p {...stylex.attrs(styles.rowTitle)}>No apps connected yet</p>
-            <p {...stylex.attrs(styles.rowDetail)}>
-              To connect one, add this link as an MCP server in an AI app.
-            </p>
-            <div {...stylex.attrs(styles.mcpLink)}>
-              <input
-                {...stylex.attrs(styles.mcpUrl)}
-                aria-label="MCP server link"
-                readonly
-                value={mcpUrl}
-                onfocus={(event) => event.currentTarget.select()}
-              />
-              <button {...stylex.attrs(ui.button, ui.small)} onclick={copyMcpUrl}
-                >{#if copiedMcpUrl}<Check size={14} />Copied{:else}<Copy
-                    size={14}
-                  />Copy{/if}</button
-              >
-            </div>
           </div>{/each}
+        <ConnectApp
+          url="{page.url.origin}/mcp"
+          title={apps.length ? 'Connect another app' : 'No apps connected yet'}
+        />
       </div>
     </section>{/if}
 

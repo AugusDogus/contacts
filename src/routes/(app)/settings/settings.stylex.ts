@@ -32,35 +32,6 @@ export const styles = stylex.create({
   rowText: { flexGrow: 1, minWidth: 0, lineHeight: 1.35, overflowWrap: 'anywhere' },
   rowTitle: { fontWeight: 500 },
   rowDetail: { fontSize: 13, color: tokens.muted },
-  empty: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    paddingBlock: { default: 18, [media.mobile]: 16 },
-    paddingInline: { default: 16, [media.mobile]: 14 }
-  },
-  mcpLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 12,
-    backgroundColor: tokens.surface,
-    paddingBlock: 6,
-    paddingLeft: 12,
-    paddingRight: 6,
-    borderRadius: 8
-  },
-  mcpUrl: {
-    flexGrow: 1,
-    minWidth: 0,
-    padding: 0,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    fontSize: 14,
-    color: tokens.ink,
-    textOverflow: 'ellipsis',
-    outline: 'none'
-  },
   claim: {
     marginBottom: 24,
     display: 'flex',
