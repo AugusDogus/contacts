@@ -35,6 +35,6 @@ Scopes: `contacts:read` is required for every tool. `create_invitations` also ne
 
 Apps stay connected while they refresh at least every 30 days. Users can disconnect them under Settings, which revokes access immediately. `patches/` adds Better Auth's `refreshTokenSupersededInterval`, which refuses a stale rotated refresh token without revoking the whole grant.
 
-Registries such as [integrations.sh](https://integrations.sh/publishing/) find the server through `/.well-known/integrations.json`, `/.well-known/mcp/server-card.json`, and `/llms.txt`, built from `BETTER_AUTH_URL` in `src/lib/server/discovery.ts`.
+Clients and registries find the server through an MCP Server Card at `/mcp/server-card`, listed in `/.well-known/ai-catalog.json` (SEP-2127), plus `/.well-known/integrations.json` and `/llms.txt` for [integrations.sh](https://integrations.sh/publishing/), which also reads the card at `/.well-known/mcp/server-card.json`. They are built from `BETTER_AUTH_URL` in `src/lib/server/discovery.ts`.
 
 Agents can send feedback with the `send_feedback` tool. It is stored in the `feedback` table; read it with `bun run db:studio`.

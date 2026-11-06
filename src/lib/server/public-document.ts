@@ -10,8 +10,14 @@ const publicHeaders = {
 export const PublicDocument = {
   /** Whether a path holds a public document whose own Cache-Control should be kept. */
   isPublicPath: (pathname: string) =>
-    pathname.startsWith('/.well-known/') || pathname === '/llms.txt',
-  json: (body: unknown) => Response.json(body, { headers: publicHeaders }),
+    pathname.startsWith('/.well-known/') ||
+    pathname === '/llms.txt' ||
+    pathname === '/mcp/server-card',
+  /** JSON with an optional specific media type, such as `application/ai-catalog+json`. */
+  json: (body: unknown, contentType = 'application/json') =>
+    new Response(JSON.stringify(body), {
+      headers: { ...publicHeaders, 'Content-Type': contentType }
+    }),
   text: (body: string) =>
     new Response(body, {
       headers: { ...publicHeaders, 'Content-Type': 'text/plain; charset=utf-8' }

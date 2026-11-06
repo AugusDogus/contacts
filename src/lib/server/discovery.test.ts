@@ -30,12 +30,39 @@ describe('integrations.sh discovery documents', () => {
     expect(doc.credentials.contacts_exchange_account?.type).toBe('oauth2');
   });
 
-  test('the server card names the endpoint, transport, and authorization server', () => {
-    expect(Discovery.serverCard(origin)).toMatchObject({
+  test('the server card follows the official MCP format and keeps the fields integrations.sh reads', () => {
+    const card = Discovery.serverCard(origin);
+    expect(card).toMatchObject({
+      $schema: 'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json',
+      name: 'exchange.contacts/address-book',
+      title: 'Contacts Exchange',
+      websiteUrl: origin,
+      remotes: [{ type: 'streamable-http', url: `${origin}/mcp` }],
       url: `${origin}/mcp`,
       transport: 'streamable-http',
       authentication: { type: 'oauth2', authorization_server: `${origin}/api/auth` }
     });
+    // Reverse-DNS with exactly one slash, as the official schema requires.
+    expect(card.name).toMatch(/^[a-zA-Z0-9.-]+\/[a-zA-Z0-9._-]+$/);
+    expect(card.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(card.description.length).toBeLessThanOrEqual(100);
+  });
+
+  test('the AI catalog points at the server card hosted under the MCP endpoint', () => {
+    expect(Discovery.aiCatalog(origin)).toEqual({
+      specVersion: '1.0',
+      entries: [
+        {
+          identifier: 'urn:air:contacts.exchange:mcp:address-book',
+          type: 'application/mcp-server-card+json',
+          url: `${origin}/mcp/server-card`
+        }
+      ]
+    });
+  });
+
+  test('llms.txt says when an agent should use Contacts Exchange', () => {
+    expect(Discovery.llmsTxt(origin)).toContain('## When to use Contacts Exchange');
   });
 
   test('llms.txt follows the llmstxt.org shape and points at the MCP endpoint', () => {
