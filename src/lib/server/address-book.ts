@@ -24,7 +24,9 @@ const reservedSlugs = new Set([
   'signup',
   'static',
   'assets',
-  'contacts'
+  'contacts',
+  // The landing page's demo makes links on this name.
+  'demo'
 ]);
 
 const pageName = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
