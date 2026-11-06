@@ -26,3 +26,9 @@ Run `bun test`, `bun run check`, and `bun run lint` before pushing. `bun run db:
 3. Add `contacts.exchange` and `*.contacts.exchange` to the project, then push to `main`.
 
 Google sign-in and export need an OAuth client with the People API enabled and the redirect URI `https://contacts.exchange/api/auth/callback/google`.
+
+## MCP
+
+`https://contacts.exchange/mcp` is a remote MCP server for listing contacts and invitation links and creating new links. Add that URL to an MCP client; it signs in and asks for consent through Better Auth's `mcp` plugin. Clients register with a [Client ID Metadata Document](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration#client-id-metadata-documents). Dynamic client registration is off.
+
+Scopes: `contacts:read` is required for every tool. `create_invitations` also needs `invitations:write`.
