@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import * as stylex from '@stylexjs/stylex';
   import { s } from './landing.stylex.ts';
   import PageMeta from '#lib/components/PageMeta.svelte';
-  import LiveDemo from './LiveDemo.svelte';
+  import LiveStep from './LiveStep.svelte';
+  import { LiveDemo } from './live-demo.svelte.ts';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let start = $derived(
@@ -48,24 +50,30 @@
     }
   }
 
+  // How it works runs on one pretend address book that stays in this browser.
+  const demo = new LiveDemo(untrack(() => data.appUrl));
   const steps = [
     {
+      step: 'invite',
       title: 'Name a link',
       text: 'Make one for each person. It works once and expires after 30 days.'
     },
     {
+      step: 'friend',
       title: 'They fill in their card',
       text: 'No account or app. They add their photo, email, phone and more.'
     },
     {
+      step: 'people',
       title: 'It lands in People',
       text: 'Search everyone who replied, and see who you’re still waiting on.'
     },
     {
+      step: 'export',
       title: 'Add them to your phone',
       text: 'Download a vCard, or add to Google Contacts without making duplicates.'
     }
-  ];
+  ] as const;
   const fields = [
     { name: 'Name', state: 'Required', on: true },
     { name: 'Email or phone', state: 'One required', on: true },
@@ -135,27 +143,29 @@
     </section>
 
     <section id="how" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="how-title">
-      <div {...stylex.attrs(s.container, s.tryIt)}>
-        <div {...stylex.attrs(s.tryHead)}>
-          <div {...stylex.attrs(s.pane)}>
-            <h2 id="how-title" {...stylex.attrs(s.h2)}>From one link to your phone</h2>
-            <p {...stylex.attrs(s.body)}>
-              No more copying addresses out of texts. Each person fills in their own card.
-            </p>
-            <a {...stylex.attrs(s.button)} href={start.href}>{start.label}</a>
-          </div>
-          <ol {...stylex.attrs(s.steps)}>
-            {#each steps as step (step.title)}<li {...stylex.attrs(s.caption)}>
-                <h3 {...stylex.attrs(s.h3)}>{step.title}</h3>
-                <p {...stylex.attrs(s.body)}>{step.text}</p>
-              </li>{/each}
-          </ol>
+      <div {...stylex.attrs(s.container, s.stack)}>
+        <div {...stylex.attrs(s.pane)}>
+          <h2 id="how-title" {...stylex.attrs(s.h2)}>From one link to your phone</h2>
+          <p {...stylex.attrs(s.body)}>
+            No more copying addresses out of texts. Each person fills in their own card.
+          </p>
+          <a {...stylex.attrs(s.button)} href={start.href}>{start.label}</a>
         </div>
-        <LiveDemo origin={data.appUrl} />
+        <ol {...stylex.attrs(s.captures)}>
+          {#each steps as step (step.step)}<li>
+              <figure {...stylex.attrs(s.figure)}>
+                <div {...stylex.attrs(s.shot)}><LiveStep {demo} step={step.step} /></div>
+                <figcaption {...stylex.attrs(s.caption)}>
+                  <h3 {...stylex.attrs(s.h3)}>{step.title}</h3>
+                  <p {...stylex.attrs(s.body)}>{step.text}</p>
+                </figcaption>
+              </figure>
+            </li>{/each}
+        </ol>
       </div>
     </section>
 
-    <section id="fields" {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
+    <section {...stylex.attrs(s.section, s.band)} aria-labelledby="fields-title">
       <div {...stylex.attrs(s.container, s.split)}>
         <div {...stylex.attrs(s.splitHead)}>
           <h2 id="fields-title" {...stylex.attrs(s.h2)}>You choose what they share</h2>

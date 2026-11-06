@@ -1,10 +1,11 @@
 /* Hallmark · shape: Feature Stack · genre: editorial · theme: Ink (deal 3/3, seed public-homepage-contacts-exchange-6d80·90dc9527·2026-11-06·r0) · job: sign up · draw: 7b5d5a
- * hero: Corridor · nav: floating pill · footer: mast · imagery: the product · signature: the real app running live on pretend people, both sides of a link · ink: paper
+ * hero: Corridor · nav: floating pill · footer: mast · imagery: the product · signature: the product at work, live, the friend's own form filled in · ink: paper
  * axes: light/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S3 R4 V4 · weakest: S, a type-only hero; the live demo starts just under it */
+/* Hallmark · pre-emit critique: P4 H4 E4 S3 R4 V4 · weakest: S, a type-only hero; the pinned run's first step shows above the fold */
 /* waive 22 · ink and greys at zero chroma · a notice board is printed in plain black */
 /* waive 48 · StyleX compiles landing-tokens.stylex.ts into hashed custom properties; every colour here is a role token */
 /* waive 26a · focus-visible and active states live in this StyleX file, which the static tier cannot read beside the .svelte markup */
+/* waive 82 · the pinned run is an ordered list of four live steps; no numeral or mark is drawn per item */
 /* answered · brand faces (Bricolage Grotesque, Instrument Sans) and brand blue kept over Epilogue and teal, pre-flight preservation */
 import * as stylex from '@stylexjs/stylex';
 import { ink, at } from './landing-tokens.stylex';
@@ -224,28 +225,45 @@ export const s = stylex.create({
     textWrap: 'pretty'
   },
 
-  // Try it: the real People view and friend's form, running on a demo book.
-  tryIt: { display: 'grid', gap: { default: 40, [at.phone]: 28 } },
-  tryHead: {
+  // The pinned run: a sticky pane beside the captures.
+  stack: {
     display: 'grid',
     gridTemplateColumns: { default: 'minmax(0, 5fr) minmax(0, 7fr)', [at.stack]: 'minmax(0, 1fr)' },
     columnGap: 'clamp(32px, 6vw, 96px)',
     rowGap: 48,
     alignItems: 'start'
   },
-  pane: { display: 'grid', gap: 24, justifyItems: 'start' },
-  steps: {
+  pane: {
+    position: { default: 'sticky', [at.stack]: 'static' },
+    top: 112,
     display: 'grid',
-    gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', [at.phone]: 'minmax(0, 1fr)' },
-    columnGap: 32,
-    rowGap: 32,
+    gap: 24,
+    justifyItems: 'start'
+  },
+  captures: {
+    display: 'grid',
+    gap: { default: 96, [at.stack]: 56 },
     margin: 0,
     padding: 0,
     listStyle: 'none'
   },
+  figure: {
+    display: 'grid',
+    gap: 20,
+    margin: 0
+  },
+  shot: {
+    display: 'block',
+    padding: ink.wellPad,
+    borderRadius: ink.radiusCard,
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: ink.rule,
+    backgroundColor: ink.paper2
+  },
+
   caption: {
     display: 'grid',
-    alignContent: 'start',
     gap: 4,
     paddingTop: 16,
     borderTopWidth: 1,

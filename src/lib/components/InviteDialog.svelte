@@ -12,9 +12,16 @@
     form,
     slug,
     actions,
-    onclose
-  }: { form: FormConfig; slug: string; actions: AddressBookActions; onclose: () => void } =
-    $props();
+    onclose,
+    inline = false
+  }: {
+    form: FormConfig;
+    slug: string;
+    actions: AddressBookActions;
+    onclose: () => void;
+    /** Shown in the page instead of over it, without taking focus. */
+    inline?: boolean;
+  } = $props();
   let count = $state(1);
   let asks = $derived(
     [
@@ -79,6 +86,7 @@
       ? 'Link ready'
       : 'New invitation'}
   {onclose}
+  {inline}
 >
   {#if links.length}
     <p {...stylex.attrs(styles.lead)}>
@@ -134,7 +142,7 @@
           bind:value={label}
           maxlength="100"
           placeholder="Who’s it for? Only you see this."
-          autofocus
+          autofocus={!inline}
         /></label
       >
       <div {...stylex.attrs(styles.countRow)}>

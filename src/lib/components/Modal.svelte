@@ -10,7 +10,8 @@
     onclose,
     children,
     size = 'default',
-    dismissible = true
+    dismissible = true,
+    inline = false
   }: {
     title: string;
     onclose: () => void;
@@ -18,46 +19,63 @@
     size?: 'default' | 'wide' | 'large';
     /** False while work is in progress: no close button, and Escape or outside clicks do nothing. */
     dismissible?: boolean;
+    /** Shown in the page as a card rather than over it, as the landing page's demo does. */
+    inline?: boolean;
   } = $props();
-  let dialog: HTMLDialogElement;
+  let dialog: HTMLDialogElement | undefined = $state();
   $effect(() => {
+    if (!dialog) return;
     dialog.showModal();
     // Without a field asking for focus, focus the dialog rather than ringing the close button.
     if (!dialog.querySelector('[autofocus]')) dialog.focus();
   });
 </script>
 
-<dialog
-  bind:this={dialog}
-  tabindex="-1"
-  {...stylex.attrs(styles.dialog, size === 'wide' && styles.wide, size === 'large' && styles.large)}
-  onclose={() => {
-    // Browsers may close a dialog on Escape even when that is cancelled, so reopen it.
-    if (dismissible) onclose();
-    else dialog.showModal();
-  }}
-  oncancel={(event) => {
-    if (!dismissible) event.preventDefault();
-  }}
-  onclick={(event) => {
-    if (dismissible && event.target === dialog) dialog.close();
-  }}
-  onkeydown={(event) => {
-    if (event.key !== 'Escape') return;
-    event.preventDefault();
-    if (dismissible) dialog.close();
-  }}
-  aria-label={title}
->
-  <div {...stylex.attrs(styles.modalBody)}>
-    <header {...stylex.attrs(styles.header)}>
-      <h2 {...stylex.attrs(styles.title)}>{title}</h2>
-      {#if dismissible}<button
-          {...stylex.attrs(ui.iconButton)}
-          onclick={() => dialog.close()}
-          aria-label="Close dialog"><X size={18} /></button
-        >{/if}
-    </header>
-    {@render children()}
-  </div>
-</dialog>
+{#if inline}<section
+    {...stylex.attrs(styles.dialog, styles.inline, size === 'wide' && styles.wide)}
+    aria-label={title}
+  >
+    <div {...stylex.attrs(styles.modalBody)}>
+      <header {...stylex.attrs(styles.header)}>
+        <p {...stylex.attrs(styles.title)}>{title}</p>
+      </header>
+      {@render children()}
+    </div>
+  </section>{:else}<dialog
+    bind:this={dialog}
+    tabindex="-1"
+    {...stylex.attrs(
+      styles.dialog,
+      size === 'wide' && styles.wide,
+      size === 'large' && styles.large
+    )}
+    onclose={() => {
+      // Browsers may close a dialog on Escape even when that is cancelled, so reopen it.
+      if (dismissible) onclose();
+      else dialog?.showModal();
+    }}
+    oncancel={(event) => {
+      if (!dismissible) event.preventDefault();
+    }}
+    onclick={(event) => {
+      if (dismissible && event.target === dialog) dialog?.close();
+    }}
+    onkeydown={(event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (dismissible) dialog?.close();
+    }}
+    aria-label={title}
+  >
+    <div {...stylex.attrs(styles.modalBody)}>
+      <header {...stylex.attrs(styles.header)}>
+        <h2 {...stylex.attrs(styles.title)}>{title}</h2>
+        {#if dismissible}<button
+            {...stylex.attrs(ui.iconButton)}
+            onclick={() => dialog?.close()}
+            aria-label="Close dialog"><X size={18} /></button
+          >{/if}
+      </header>
+      {@render children()}
+    </div>
+  </dialog>{/if}
