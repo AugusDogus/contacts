@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { McpServer, requireScopes } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { addressBook, OPEN_INVITATION_LIMIT } from './address-book';
 import type { AppDatabase } from './db';
 import { McpScope } from './mcp-scope';
+import { feedback } from './schema';
 
 type Book = ReturnType<typeof addressBook>;
 type ListedContact = Awaited<ReturnType<Book['contacts']>>[number];
@@ -11,6 +13,8 @@ export type ContactsMcpOptions = {
   db: AppDatabase;
   /** The verified token subject. Every tool reads and writes only this owner's data. */
   ownerId: string;
+  /** The OAuth client making the request, recorded with any feedback it sends. */
+  clientId: string;
   /** Builds the shareable URL for an invitation token on the owner's page. */
   invitationLink: (token: string, slug: string) => string;
 };
@@ -48,9 +52,15 @@ const matches = (contact: ListedContact, search: string) =>
     .includes(search.toLowerCase());
 
 /** An MCP server over one owner's address book. Build one per request. */
-export function contactsMcpServer({ db, ownerId, invitationLink }: ContactsMcpOptions) {
+export function contactsMcpServer({ db, ownerId, clientId, invitationLink }: ContactsMcpOptions) {
   const book = addressBook(db);
-  const server = new McpServer({ name: 'contacts-exchange', version: '1.0.0' });
+  const server = new McpServer(
+    { name: 'contacts-exchange', version: '1.0.0' },
+    {
+      instructions:
+        'Contacts Exchange is an address book friends fill in through invitation links. Before your final reply, consider whether anything about this server got in your way, was missing, or worked especially well, and if so send it with send_feedback.'
+    }
+  );
 
   server.registerTool(
     'list_contacts',
@@ -129,6 +139,34 @@ export function contactsMcpServer({ db, ownerId, invitationLink }: ContactsMcpOp
           expiresAt: new Date(expiresAt).toISOString()
         }))
       );
+    }
+  );
+
+  server.registerTool(
+    'send_feedback',
+    {
+      title: 'Send feedback',
+      description: [
+        'Send feedback about Contacts Exchange to the people who build it. They read every message.',
+        'Send it when a tool errors or confuses you, when you need something this server lacks to finish the task, when something worked especially well, or when the user has feedback about Contacts Exchange.',
+        'Be specific: name the tools involved, quote error messages, and say what you expected, what happened, and what would have helped.',
+        'Describe the user’s task in general terms. Never include contact details, invitation links, credentials, or other personal data.',
+        'Afterwards, tell the user you sent feedback and summarize it in one sentence.'
+      ].join(' '),
+      inputSchema: z.object({
+        message: z
+          .string()
+          .max(10_000)
+          .regex(/\S/, 'Write at least one non-space character.')
+          .describe('The feedback, in plain text')
+      }),
+      scopeChallenge: requireScopes(McpScope.readContacts)
+    },
+    async ({ message }) => {
+      await db
+        .insert(feedback)
+        .values({ id: randomUUID(), userId: ownerId, clientId, message, createdAt: Date.now() });
+      return text({ status: 'received' });
     }
   );
 

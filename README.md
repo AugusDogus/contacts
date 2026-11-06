@@ -32,3 +32,7 @@ Google sign-in and export need an OAuth client with the People API enabled and t
 `https://contacts.exchange/mcp` is a remote MCP server for listing contacts and invitation links and creating new links. Add that URL to an MCP client; it signs in and asks for consent through Better Auth's `mcp` plugin. Clients register with a [Client ID Metadata Document](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/client-registration#client-id-metadata-documents). Dynamic client registration is off.
 
 Scopes: `contacts:read` is required for every tool. `create_invitations` also needs `invitations:write`.
+
+Apps stay connected while they refresh at least every 30 days. Users can disconnect them under Settings, which revokes access immediately. `patches/` adds Better Auth's `refreshTokenSupersededInterval`, which refuses a stale rotated refresh token without revoking the whole grant.
+
+Agents can send feedback with the `send_feedback` tool. It is stored in the `feedback` table; read it with `bun run db:studio`.

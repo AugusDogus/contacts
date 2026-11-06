@@ -5,7 +5,7 @@ import { testDatabase } from '../../../test/database';
 import { Contact } from '../contact';
 import { addressBook, OPEN_INVITATION_LIMIT } from './address-book';
 import { contactsMcpServer } from './mcp-server';
-import { contacts } from './schema';
+import { contacts, feedback } from './schema';
 
 const cleanup: (() => Promise<void> | void)[] = [];
 afterEach(async () => {
@@ -30,6 +30,7 @@ async function setup() {
     const server = contactsMcpServer({
       db,
       ownerId,
+      clientId: 'test-client',
       invitationLink: (token, slug) => `https://example.test/p/${slug}/i/${token}`
     });
     await server.connect(serverTransport);
@@ -44,7 +45,7 @@ async function setup() {
     };
     return { call };
   };
-  return { book, owner, add, connect };
+  return { db, book, owner, add, connect };
 }
 
 describe('contacts MCP server', () => {
@@ -92,5 +93,23 @@ describe('contacts MCP server', () => {
     const result = await call('create_invitations', { count: 1 });
     expect(result.isError).toBe(true);
     expect(result.text).toContain('Open Contacts Exchange');
+  });
+
+  test('records feedback with the sender and the app that sent it', async () => {
+    const { db, connect } = await setup();
+    const { call } = await connect('owner');
+    expect((await call('send_feedback', { message: 'list_contacts needs paging' })).isError).toBe(
+      false
+    );
+    expect(await db.select().from(feedback)).toMatchObject([
+      { userId: 'owner', clientId: 'test-client', message: 'list_contacts needs paging' }
+    ]);
+  });
+
+  test('rejects blank feedback without storing it', async () => {
+    const { db, connect } = await setup();
+    const { call } = await connect('owner');
+    expect((await call('send_feedback', { message: '   ' })).isError).toBe(true);
+    expect(await db.select().from(feedback)).toEqual([]);
   });
 });

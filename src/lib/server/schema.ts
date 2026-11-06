@@ -134,6 +134,20 @@ export const googleImports = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.contactId, t.accountId] })]
 );
+/** Feedback agents send through the MCP server's send_feedback tool. */
+export const feedback = sqliteTable(
+  'feedback',
+  {
+    id: text().primaryKey(),
+    userId: text().notNull(),
+    // The MCP client that sent it, so feedback can be grouped by app.
+    clientId: text().notNull(),
+    message: text().notNull(),
+    createdAt: integer().notNull()
+  },
+  (t) => [index('feedback_created').on(t.createdAt)]
+);
+
 export const jwks = sqliteTable('jwks', {
   id: text().primaryKey(),
   publicKey: text().notNull(),

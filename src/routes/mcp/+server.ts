@@ -31,6 +31,7 @@ const handle = requireMcpAuth(
         contactsMcpServer({
           db,
           ownerId: claims.sub,
+          clientId: claims.azp,
           invitationLink: (token, slug) => invitationUrl(token, origin, slug)
         }),
       // Serves MCP 2026-07-28 and, statelessly, the 2025 revisions most clients still default to.
