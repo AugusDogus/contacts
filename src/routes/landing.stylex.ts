@@ -1,8 +1,11 @@
 /* Hallmark · shape: Feature Stack · genre: editorial · theme: Ink (deal 3/3, seed public-homepage-contacts-exchange-6d80·90dc9527·2026-11-06·r0) · job: sign up · draw: 7b5d5a
- * hero: Corridor · nav: floating pill · footer: mast · imagery: the product · signature: the friend's form, captured, opening the pinned run · ink: paper
+ * hero: Corridor · nav: floating pill · footer: mast · imagery: the product · signature: the product at work, captured, the friend's own form filled in · ink: paper
  * axes: light/grotesk-sans/chromatic-blue · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S3 R4 V4 · weakest: S, the signature sits one scroll below a type-only hero; the pinned run opens on it */
+/* Hallmark · pre-emit critique: P4 H4 E4 S3 R4 V4 · weakest: S, a type-only hero; the pinned run's first capture shows above the fold */
 /* waive 22 · ink and greys at zero chroma · a notice board is printed in plain black */
+/* waive 48 · StyleX compiles landing-tokens.stylex.ts into hashed custom properties; every colour here is a role token */
+/* waive 26a · focus-visible and active states live in this StyleX file, which the static tier cannot read beside the .svelte markup */
+/* waive 82 · the pinned run is an ordered list of four captures; no numeral or mark is drawn per item */
 /* answered · brand faces (Bricolage Grotesque, Instrument Sans) and brand blue kept over Epilogue and teal, pre-flight preservation */
 import * as stylex from '@stylexjs/stylex';
 import { ink, at } from './landing-tokens.stylex';
@@ -142,9 +145,8 @@ export const s = stylex.create({
   hero: {
     display: 'grid',
     placeItems: 'center',
-    minHeight: { default: 'min(calc(100svh - 84px), 820px)', [at.stack]: 'auto' },
-    paddingBlockStart: { default: 48, [at.stack]: 88 },
-    paddingBlockEnd: { default: 64, [at.stack]: 72 },
+    paddingBlockStart: { default: 'clamp(56px, 10vh, 112px)', [at.stack]: 88 },
+    paddingBlockEnd: { default: 'clamp(48px, 8vh, 80px)', [at.stack]: 72 },
     textAlign: 'center'
   },
   heroInner: {
@@ -158,7 +160,7 @@ export const s = stylex.create({
     maxWidth: '12ch',
     fontFamily: ink.display,
     fontWeight: 700,
-    fontSize: 'clamp(2.75rem, 5.5vw + 1rem, 6.5rem)',
+    fontSize: 'clamp(2.75rem, 6.5vw + 1rem, 7.5rem)',
     lineHeight: 0.98,
     letterSpacing: ink.tracking,
     textWrap: 'balance',
@@ -187,6 +189,10 @@ export const s = stylex.create({
   // Sections.
   section: {
     paddingBlock: ink.sectionGap
+  },
+  // The pinned run follows the hero closely so its first capture shows above the fold.
+  sectionAfterHero: {
+    paddingBlockStart: 'clamp(24px, 4vw, 56px)'
   },
   band: {
     backgroundColor: ink.paper2,
@@ -247,9 +253,8 @@ export const s = stylex.create({
     margin: 0
   },
   shot: {
-    position: 'relative',
-    overflow: 'hidden',
-    aspectRatio: '16 / 10',
+    display: 'block',
+    padding: ink.wellPad,
     borderRadius: ink.radiusCard,
     borderWidth: 1,
     borderStyle: 'solid',
@@ -259,9 +264,10 @@ export const s = stylex.create({
   shotImg: {
     display: 'block',
     width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'top'
+    height: 'auto',
+    borderRadius: 8,
+    outline: `1px solid ${ink.rule}`,
+    outlineOffset: -1
   },
   caption: {
     display: 'grid',
@@ -357,6 +363,7 @@ export const s = stylex.create({
   closeSide: { display: 'grid', gap: 28, justifyItems: 'start', alignSelf: 'end' },
   code: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 12,
     width: '100%',
@@ -367,15 +374,14 @@ export const s = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: ink.inkRule,
-    backgroundColor: 'oklch(21% 0 0)'
+    backgroundColor: ink.inkWell
   },
   codeText: {
-    flex: '1',
-    minWidth: 0,
-    overflowWrap: 'anywhere',
+    flexGrow: 1,
+    whiteSpace: 'nowrap',
     userSelect: 'all',
     fontFamily: ink.mono,
-    fontSize: { default: 17, [at.phone]: 15 },
+    fontSize: { default: 17, [at.phone]: 14 },
     color: ink.onInk
   },
   copy: {
@@ -386,7 +392,7 @@ export const s = stylex.create({
     borderWidth: 1,
     borderStyle: 'solid',
     borderColor: ink.inkRule,
-    backgroundColor: { default: 'transparent', [at.hover]: { ':hover': 'oklch(28% 0 0)' } },
+    backgroundColor: { default: 'transparent', [at.hover]: { ':hover': ink.ink2 } },
     color: ink.onInk,
     fontFamily: ink.body,
     fontWeight: 600,
@@ -396,7 +402,6 @@ export const s = stylex.create({
     outline: { default: null, ':focus-visible': `2px solid ${ink.accentOnInk}` },
     outlineOffset: 2
   },
-  apps: { margin: 0, fontSize: 15, color: ink.onInkMuted },
 
   // Footer: a mast.
   footer: {
@@ -434,7 +439,8 @@ export const s = stylex.create({
     display: 'flex',
     flexWrap: 'wrap',
     gap: 4,
-    margin: 0,
+    marginBlock: 0,
+    marginInline: -12,
     padding: 0,
     listStyle: 'none'
   },

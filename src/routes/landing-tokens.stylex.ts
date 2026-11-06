@@ -14,6 +14,7 @@ export const ink = stylex.defineVars({
   onInk: 'oklch(99.5% 0.003 100)',
   onInkMuted: 'oklch(78% 0 0)',
   inkRule: 'oklch(32% 0 0)',
+  inkWell: 'oklch(21% 0 0)',
   accent: '#3659d9',
   accentOnInk: '#9db0f5',
   accentSoft: '#eef1fd',
@@ -31,6 +32,7 @@ export const ink = stylex.defineVars({
   container: '1200px',
   gutter: 'clamp(16px, 5vw, 64px)',
   sectionGap: 'clamp(72px, 10vw, 144px)',
+  wellPad: 'clamp(12px, 3vw, 32px)',
   easeOut: 'cubic-bezier(0.16, 1, 0.3, 1)',
   durMicro: '120ms',
   durShort: '220ms'

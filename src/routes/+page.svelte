@@ -50,25 +50,33 @@
   const steps = [
     {
       image: 'invite',
+      wide: { width: 1200, height: 798 },
+      phone: { width: 780, height: 674 },
       title: 'Name a link',
       text: 'Make one for each person. It works once and expires after 30 days.',
       alt: 'The New invitation dialog, with the name Maya typed in above a Create link button.'
     },
     {
       image: 'friend',
+      wide: { width: 1200, height: 1213 },
+      phone: { width: 780, height: 1204 },
       title: 'They fill in their card',
-      text: 'No account or app. They add a photo, an address, a birthday.',
-      alt: 'The form a friend sees, titled Share your details with Robin, with fields for a photo, name, email and phone.'
+      text: 'No account or app. They add their photo, email, phone and more.',
+      alt: 'The form a friend sees, titled Share your details with Robin, filled in with a photo, the name Maya Brooks, an email and a phone number.'
     },
     {
       image: 'people',
+      wide: { width: 1200, height: 1000 },
+      phone: { width: 780, height: 1058 },
       title: 'It lands in People',
       text: 'Search everyone who replied, and see who you’re still waiting on.',
-      alt: 'The People page, with three links still waiting and new contacts listed with their cities.'
+      alt: 'The People page, with three links still waiting and the newest contacts listed below.'
     },
     {
       image: 'export',
-      title: 'Take it with you',
+      wide: { width: 1200, height: 522 },
+      phone: { width: 780, height: 833 },
+      title: 'Add them to your phone',
       text: 'Download a vCard, or add to Google Contacts without making duplicates.',
       alt: 'The Export page, offering Google Contacts or a vCard file for Apple Contacts and Outlook.'
     }
@@ -87,12 +95,8 @@
   ];
   const questions = [
     {
-      q: 'Does my friend need an account?',
-      a: 'No. They open your link, fill in their card, and send it.'
-    },
-    {
-      q: 'What if a link gets forwarded?',
-      a: 'Each link works once, so only the first person to open it can reply.'
+      q: 'What happens when a link expires?',
+      a: 'Your friend is asked for a new one. Renew it from People for another 30 days.'
     },
     {
       q: 'Who can see the details?',
@@ -145,7 +149,7 @@
       </div>
     </section>
 
-    <section id="how" {...stylex.attrs(s.section)} aria-labelledby="how-title">
+    <section id="how" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="how-title">
       <div {...stylex.attrs(s.container, s.stack)}>
         <div {...stylex.attrs(s.pane)}>
           <h2 id="how-title" {...stylex.attrs(s.h2)}>From one link to your phone</h2>
@@ -157,17 +161,23 @@
         <ol {...stylex.attrs(s.captures)}>
           {#each steps as step, index (step.image)}<li>
               <figure {...stylex.attrs(s.figure)}>
-                <div {...stylex.attrs(s.shot)}>
+                <picture {...stylex.attrs(s.shot)}>
+                  <source
+                    media="(max-width: 40rem)"
+                    srcset="/landing/{step.image}-phone.webp"
+                    width={step.phone.width}
+                    height={step.phone.height}
+                  />
                   <img
                     {...stylex.attrs(s.shotImg)}
-                    src="/landing/{step.image}.webp"
+                    src="/landing/{step.image}-wide.webp"
                     alt={step.alt}
-                    width="1600"
-                    height="1000"
+                    width={step.wide.width}
+                    height={step.wide.height}
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
                   />
-                </div>
+                </picture>
                 <figcaption {...stylex.attrs(s.caption)}>
                   <h3 {...stylex.attrs(s.h3)}>{step.title}</h3>
                   <p {...stylex.attrs(s.body)}>{step.text}</p>
@@ -199,7 +209,7 @@
 
     <section id="questions" {...stylex.attrs(s.section)} aria-labelledby="questions-title">
       <div {...stylex.attrs(s.container)}>
-        <h2 id="questions-title" {...stylex.attrs(s.h2)}>Questions</h2>
+        <h2 id="questions-title" {...stylex.attrs(s.h2)}>Before you send a link</h2>
         <dl {...stylex.attrs(s.questions)}>
           {#each questions as item (item.q)}<div {...stylex.attrs(s.question)}>
               <dt {...stylex.attrs(s.q)}>{item.q}</dt>
@@ -214,7 +224,7 @@
         <div {...stylex.attrs(s.splitHead)}>
           <h2 id="ai-title" {...stylex.attrs(s.h2, s.closeH2)}>Ask your AI for an address</h2>
           <p {...stylex.attrs(s.body, s.closeBody)}>
-            Add this address to Claude, ChatGPT, or another AI app. Then look someone up or make
+            Add this address to Claude, ChatGPT, or another AI app, then look people up or make
             invitation links from a chat.
           </p>
         </div>
@@ -226,7 +236,6 @@
               onclick={copyMcpUrl}>{copyLabel}</button
             >
           </div>
-          <p {...stylex.attrs(s.apps)}>Sign in once when your AI app asks.</p>
           <a {...stylex.attrs(s.button, s.buttonOnInk)} href={start.href}>{start.label}</a>
         </div>
       </div>
