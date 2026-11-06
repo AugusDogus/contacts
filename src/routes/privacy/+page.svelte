@@ -2,10 +2,15 @@
   import * as stylex from '@stylexjs/stylex';
   import Brand from '#lib/components/Brand.svelte';
   import Footer from '#lib/components/Footer.svelte';
+  import PageMeta from '#lib/components/PageMeta.svelte';
   import { styles } from '#lib/public-info.stylex.ts';
 </script>
 
-<svelte:head><title>Privacy | Contacts Exchange</title></svelte:head>
+<PageMeta
+  title="Privacy | Contacts Exchange"
+  description="What Contacts Exchange stores, who can see the contact cards people send you, how Google access works, and how to delete your data."
+  path="/privacy"
+/>
 <div {...stylex.attrs(styles.page)}>
   <header {...stylex.attrs(styles.header)}>
     <Brand /><a {...stylex.attrs(styles.link)} href="/about">About</a>

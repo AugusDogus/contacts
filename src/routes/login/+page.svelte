@@ -5,6 +5,7 @@
   import { styles } from './login.stylex.ts';
   import Brand from '#lib/components/Brand.svelte';
   import Footer from '#lib/components/Footer.svelte';
+  import PageMeta from '#lib/components/PageMeta.svelte';
   import ContactStack from '#lib/components/ContactStack.svelte';
   import { authClient } from '#lib/auth-client.ts';
   import type { PageProps } from './$types';
@@ -40,10 +41,11 @@
   }
 </script>
 
-<svelte:head
-  ><title>{mode === 'signup' ? 'Create an account' : 'Sign in'} | Contacts Exchange</title
-  ></svelte:head
->
+<PageMeta
+  title="{mode === 'signup' ? 'Create an account' : 'Sign in'} | Contacts Exchange"
+  description="Create your Contacts Exchange address book, or sign in to see the contact details your friends sent you."
+  path="/login"
+/>
 <div {...stylex.attrs(styles.shell)}>
   <header {...stylex.attrs(styles.header)}><Brand /></header>
   <main {...stylex.attrs(styles.main)}>

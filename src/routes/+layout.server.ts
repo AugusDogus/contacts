@@ -1,3 +1,4 @@
-import { googleConfigured } from '#lib/server/auth.ts';
-import { BETTER_AUTH_URL } from '$app/env/private';
-export const load = () => ({ googleConfigured, appUrl: BETTER_AUTH_URL });
+import { googleConfigured, mcpResource } from '#lib/server/auth.ts';
+// The site's own origin, for links that must point at the main site (footers on
+// people's subdomains, canonical URLs, social cards).
+export const load = () => ({ googleConfigured, appUrl: new URL(mcpResource).origin });

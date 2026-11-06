@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as stylex from '@stylexjs/stylex';
   import { s } from './landing.stylex.ts';
+  import PageMeta from '#lib/components/PageMeta.svelte';
   import type { PageProps } from './$types';
   let { data }: PageProps = $props();
   let start = $derived(
@@ -9,6 +10,32 @@
       : { href: '/login', label: 'Create your address book' }
   );
   let mcpUrl = $derived(`${data.appUrl}/mcp`);
+  const description =
+    'A private address book your friends fill in. Send one link, they add their own name, email, phone, address and birthday, and you export it to your phone.';
+  // Structured data for the site name and logo in search results.
+  let structuredData = $derived(
+    JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'WebSite',
+          '@id': `${data.appUrl}/#website`,
+          name: 'Contacts Exchange',
+          url: `${data.appUrl}/`,
+          description,
+          publisher: { '@id': `${data.appUrl}/#organization` }
+        },
+        {
+          '@type': 'Organization',
+          '@id': `${data.appUrl}/#organization`,
+          name: 'Contacts Exchange',
+          url: `${data.appUrl}/`,
+          logo: `${data.appUrl}/icon-512.png`,
+          email: 'support@contacts.exchange'
+        }
+      ]
+    }).replaceAll('<', '\\u003c')
+  );
   let copy = $state<'idle' | 'copied' | 'failed'>('idle');
   let copyLabel = $derived({ idle: 'Copy', copied: 'Copied', failed: 'Select to copy' }[copy]);
   async function copyMcpUrl() {
@@ -77,6 +104,12 @@
     }
   ];
 </script>
+
+<PageMeta title="Contacts Exchange: an address book your friends fill in" {description} path="/" />
+<svelte:head>
+  <!-- Safe: JSON.stringify output with every < escaped. -->
+  {@html `<script type="application/ld+json">${structuredData}</script>`}
+</svelte:head>
 
 <div {...stylex.attrs(s.page)}>
   <a {...stylex.attrs(s.skip)} href="#main">Skip to content</a>

@@ -24,10 +24,7 @@
 <svelte:head
   >{#if import.meta.env.DEV}<link rel="stylesheet" href="/virtual:stylex.css" />{/if}<title
     >Contacts Exchange</title
-  ><meta
-    name="description"
-    content="A private address book your friends fill in. Send a link, and their contact details come to you."
-  /></svelte:head
+  ></svelte:head
 >
 {@render children()}
 <div {...stylex.attrs(ui.toastRegion)} aria-live="polite" aria-atomic="true">

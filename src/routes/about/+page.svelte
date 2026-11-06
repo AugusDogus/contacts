@@ -2,11 +2,16 @@
   import * as stylex from '@stylexjs/stylex';
   import Brand from '#lib/components/Brand.svelte';
   import Footer from '#lib/components/Footer.svelte';
+  import PageMeta from '#lib/components/PageMeta.svelte';
   import { styles } from '#lib/public-info.stylex.ts';
   import { ui } from '#lib/ui.stylex.ts';
 </script>
 
-<svelte:head><title>About Contacts Exchange</title></svelte:head>
+<PageMeta
+  title="About Contacts Exchange"
+  description="Contacts Exchange collects contact details from people you know. Send a private link, they fill in their own card, and you export it to Google Contacts or a vCard."
+  path="/about"
+/>
 <div {...stylex.attrs(styles.page)}>
   <header {...stylex.attrs(styles.header)}>
     <Brand /><a {...stylex.attrs(styles.link)} href="/login">Sign in</a>
