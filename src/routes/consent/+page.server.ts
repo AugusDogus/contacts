@@ -8,7 +8,7 @@ const scopeDescriptions: Record<string, string> = {
   openid: 'Confirm who you are',
   profile: 'See your name',
   email: 'See your email address',
-  offline_access: 'Stay connected until you disconnect it',
+  offline_access: 'Stay connected while you keep using it',
   [McpScope.readContacts]: 'Read the contacts in your address book',
   [McpScope.writeInvitations]: 'Create invitation links for you'
 };

@@ -21,6 +21,9 @@ export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIEN
 const baseURL = env.BETTER_AUTH_URL || 'http://localhost:5173';
 /** The MCP endpoint. Access tokens are audience-bound to this exact URL. */
 export const mcpResource = `${baseURL}/mcp`;
+const accessTokenSeconds = 3600;
+/** Each refresh issues a token valid this long again, so a grant lives while it is used monthly. */
+const refreshTokenSeconds = 30 * 24 * 3600;
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'sqlite', schema }),
   baseURL,
@@ -52,7 +55,13 @@ export const auth = betterAuth({
         'offline_access',
         McpScope.readContacts,
         McpScope.writeInvitations
-      ]
+      ],
+      accessTokenExpiresIn: accessTokenSeconds,
+      refreshTokenExpiresIn: refreshTokenSeconds,
+      // MCP clients often run several instances from one stored grant, each refreshing its own
+      // copy. A sibling presenting a token rotated while that rotation's access token is still
+      // live gets the same response instead of revoking every token for the client and user.
+      refreshTokenReuseInterval: accessTokenSeconds
     }),
     cimd({ fetchClientMetadataResource, metadataProfile: 'mcp-2026-07-28' }),
     sveltekitCookies(getRequestEvent)

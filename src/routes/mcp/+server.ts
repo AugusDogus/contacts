@@ -45,7 +45,8 @@ const handle = requireMcpAuth(
   {
     resource: mcpResource,
     requiredScopes: [McpScope.readContacts],
-    challengeScopes: [McpScope.readContacts, McpScope.writeInvitations]
+    // Clients request the challenged scopes, and refresh tokens are only issued with offline_access.
+    challengeScopes: [McpScope.readContacts, McpScope.writeInvitations, 'offline_access']
   }
 );
 
