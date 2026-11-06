@@ -1,6 +1,10 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
+import { jwt } from 'better-auth/plugins';
+import { mcp } from '@better-auth/mcp';
+import { cimd } from '@better-auth/cimd';
+import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import { getRequestEvent } from '$app/server';
 import { building, dev } from '$app/env';
 import * as env from '$app/env/private';
@@ -13,9 +17,19 @@ if (!dev && !building && (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL)) {
   );
 }
 export const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+const baseURL = env.BETTER_AUTH_URL || 'http://localhost:5173';
+/** The MCP endpoint. Access tokens are audience-bound to this exact URL. */
+export const mcpResource = `${baseURL}/mcp`;
+/** Scopes an MCP client can request beyond the OpenID defaults. */
+export const McpScope = {
+  readContacts: 'contacts:read',
+  writeInvitations: 'invitations:write'
+} as const;
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'sqlite', schema }),
-  baseURL: env.BETTER_AUTH_URL || 'http://localhost:5173',
+  baseURL,
+  // MCP access tokens share the JWT plugin's signing key, so session JWTs stay disabled.
+  disabledPaths: ['/token'],
   secret: env.BETTER_AUTH_SECRET || 'gather-local-development-secret-not-for-production',
   emailAndPassword: { enabled: true, minPasswordLength: 10 },
   socialProviders: googleConfigured
@@ -29,5 +43,22 @@ export const auth = betterAuth({
     : {},
   account: { encryptOAuthTokens: true },
   rateLimit: { enabled: true, storage: 'database' },
-  plugins: [sveltekitCookies(getRequestEvent)]
+  plugins: [
+    jwt({ disableSettingJwtHeader: true }),
+    mcp({
+      loginPage: '/login',
+      consentPage: '/consent',
+      resource: mcpResource,
+      scopes: [
+        'openid',
+        'profile',
+        'email',
+        'offline_access',
+        McpScope.readContacts,
+        McpScope.writeInvitations
+      ]
+    }),
+    cimd({ fetchClientMetadataResource, metadataProfile: 'mcp-2026-07-28' }),
+    sveltekitCookies(getRequestEvent)
+  ]
 });
