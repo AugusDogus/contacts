@@ -2,7 +2,7 @@ import { command, getRequestEvent, query } from '$app/server';
 import { z } from 'zod';
 import { error } from '@sveltejs/kit';
 import { db } from './server/db';
-import { addressBook } from './server/address-book';
+import { addressBook, OPEN_INVITATION_LIMIT } from './server/address-book';
 import { requireViewer } from './server/viewer';
 import { contactInput } from './contact';
 import { FormConfig } from './form-config';
@@ -32,19 +32,14 @@ export const getAddressBook = query(async () => {
   };
 });
 
-const OPEN_LIMIT = 200;
-async function openCount(ownerId: string) {
-  return (await book.openInvitations(ownerId)).filter((item) => item.expiresAt > Date.now()).length;
-}
-
 export const createInvitations = command(
   z.object({ count: z.number().int().min(1).max(20), label: z.string().trim().max(100) }),
   async ({ count, label }) => {
     const viewer = requireViewer();
-    if ((await openCount(viewer.id)) + count > OPEN_LIMIT)
+    if ((await book.openCount(viewer.id)) + count > OPEN_INVITATION_LIMIT)
       return {
         ok: false,
-        message: `You can have ${OPEN_LIMIT} open links. Delete ones you no longer need, then try again.`
+        message: `You can have ${OPEN_INVITATION_LIMIT} open links. Delete ones you no longer need, then try again.`
       } as const;
     const invitations = await book.createInvitations(viewer.id, count, label);
     await getAddressBook().refresh();
@@ -65,10 +60,10 @@ export const deleteInvitation = command(z.string(), async (id) => {
 
 export const renewInvitation = command(z.string(), async (id) => {
   const viewer = requireViewer();
-  if ((await openCount(viewer.id)) >= OPEN_LIMIT)
+  if ((await book.openCount(viewer.id)) >= OPEN_INVITATION_LIMIT)
     return {
       ok: false,
-      message: `You can have ${OPEN_LIMIT} open links. Delete ones you no longer need, then try again.`
+      message: `You can have ${OPEN_INVITATION_LIMIT} open links. Delete ones you no longer need, then try again.`
     } as const;
   const renewed = await book.renewInvitation(viewer.id, id);
   await getAddressBook().refresh();
