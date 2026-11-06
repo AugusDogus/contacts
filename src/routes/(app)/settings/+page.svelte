@@ -94,7 +94,7 @@
 </script>
 
 <svelte:head><title>Settings | Contacts Exchange</title></svelte:head>
-<a href="/" {...stylex.attrs(ui.back)}><ArrowLeft size={15} />People</a>
+<a href="/people" {...stylex.attrs(ui.back)}><ArrowLeft size={15} />People</a>
 <div {...stylex.attrs(ui.pageHeading)}><h1>Settings</h1></div>
 <div {...stylex.attrs(styles.stack)}>
   {#if data.canClaim && !claimed && book.viewer.kind === 'account'}<section

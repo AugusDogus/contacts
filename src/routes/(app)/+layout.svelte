@@ -13,7 +13,7 @@
   <a href="#main" {...stylex.attrs(styles.skipLink)}>Skip to content</a>
   <header {...stylex.attrs(styles.header)}>
     <div {...stylex.attrs(styles.headerInner)}>
-      <Brand />
+      <Brand href="/people" />
       <div {...stylex.attrs(styles.end)}>
         {#if data.viewer.kind === 'demo'}<a href="/login" {...stylex.attrs(styles.demo)}
             >Demo · Sign up</a

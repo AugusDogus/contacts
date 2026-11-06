@@ -15,7 +15,7 @@ cp .env.example .env
 bun run dev
 ```
 
-Open `http://localhost:5173`. Signed out, `/` opens a demo with sample contacts.
+Open `http://localhost:5173`. Signed out, `/people` opens a demo with sample contacts; `/` is the public landing page.
 
 Run `bun test`, `bun run check`, and `bun run lint` before pushing. `bun run db:push` applies `src/lib/server/schema.ts` to the configured database.
 
