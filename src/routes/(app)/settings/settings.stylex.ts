@@ -24,6 +24,11 @@ export const styles = stylex.create({
     paddingBlock: 12,
     paddingInline: { default: 16, [media.mobile]: 14 }
   },
+  listRow: {
+    borderTopWidth: { default: 1, ':first-child': 0 },
+    borderTopStyle: 'solid',
+    borderTopColor: tokens.line
+  },
   rowText: { flexGrow: 1, minWidth: 0, lineHeight: 1.35, overflowWrap: 'anywhere' },
   rowTitle: { fontWeight: 500 },
   rowDetail: { fontSize: 13, color: tokens.muted },
