@@ -1,7 +1,8 @@
 import { error, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
-import { auth, McpScope } from '#lib/server/auth.ts';
+import { auth } from '#lib/server/auth.ts';
+import { McpScope } from '#lib/server/mcp-scope.ts';
 
 const scopeDescriptions: Record<string, string> = {
   openid: 'Confirm who you are',
