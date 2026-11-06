@@ -203,9 +203,12 @@
               onclick={() => disconnect(app.id, app.name)}
               >{disconnecting === app.id ? 'Disconnecting…' : 'Disconnect'}</button
             >
-          </div>{:else}<p {...stylex.attrs(styles.row, styles.rowDetail)}>
-            No apps yet. Add <code>{page.url.origin}/mcp</code> to an AI app that supports MCP.
-          </p>{/each}
+          </div>{:else}<div {...stylex.attrs(styles.row)}>
+            <p {...stylex.attrs(styles.rowText, styles.rowDetail)}>
+              No apps yet. Add <code {...stylex.attrs(styles.mcpUrl)}>{page.url.origin}/mcp</code> to
+              an AI app that supports MCP.
+            </p>
+          </div>{/each}
       </div>
     </section>{/if}
 
