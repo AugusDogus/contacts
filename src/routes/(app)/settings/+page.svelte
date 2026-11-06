@@ -82,8 +82,13 @@
       disconnecting = '';
     }
   }
+  const list = new Intl.ListFormat('en-US', { type: 'conjunction' });
   const access = (scopes: string[]) =>
-    scopes.includes('invitations:write') ? 'Reads contacts and creates links' : 'Reads contacts';
+    list.format([
+      'Reads contacts',
+      ...(scopes.includes('invitations:write') ? ['creates links'] : []),
+      ...(scopes.includes('card:write') ? ['edits your card'] : [])
+    ]);
   const day = (ms: number) =>
     new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 </script>

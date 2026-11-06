@@ -1,4 +1,5 @@
 import { requireMcpAuth } from '@better-auth/mcp';
+import { fetchClientMetadataResource } from '@better-auth/cimd/node';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { auth, mcpResource } from '#lib/server/auth.ts';
@@ -10,7 +11,12 @@ import { invitationUrl } from '#lib/links.ts';
 
 const origin = new URL(mcpResource).origin;
 const resourceMetadataUrl = `${origin}/.well-known/oauth-protected-resource/mcp`;
-const challengeScopes = [McpScope.readContacts, McpScope.writeInvitations, 'offline_access'];
+const challengeScopes = [
+  McpScope.readContacts,
+  McpScope.writeInvitations,
+  McpScope.writeCard,
+  'offline_access'
+];
 const apps = connectedApps(db);
 // Signature, issuer, audience, and expiry are already verified; these are the claims tools rely on.
 const accessToken = z.object({
@@ -32,7 +38,9 @@ const handle = requireMcpAuth(
           db,
           ownerId: claims.sub,
           clientId: claims.azp,
-          invitationLink: (token, slug) => invitationUrl(token, origin, slug)
+          invitationLink: (token, slug) => invitationUrl(token, origin, slug),
+          // The CIMD transport resolves DNS once, refuses non-public addresses, and never redirects.
+          fetchPhoto: fetchClientMetadataResource
         }),
       // Serves MCP 2026-07-28 and, statelessly, the 2025 revisions most clients still default to.
       // Either way each request stands alone, so no session store is needed.

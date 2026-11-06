@@ -13,8 +13,9 @@ const scopeDescriptions: Record<string, string> = {
   profile: 'See your name',
   email: 'See your email address',
   offline_access: 'Stay connected while you keep using it',
-  [McpScope.readContacts]: 'Read the contacts in your address book',
-  [McpScope.writeInvitations]: 'Create invitation links for you'
+  [McpScope.readContacts]: 'Read your address book and your own card',
+  [McpScope.writeInvitations]: 'Create invitation links for you',
+  [McpScope.writeCard]: 'Update your own card'
 };
 
 const httpsOnly = (value: string | null | undefined) =>

@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { Client } from '@modelcontextprotocol/client';
 import { InMemoryTransport } from '@modelcontextprotocol/server';
+import sharp from 'sharp';
 import { testDatabase } from '../../../test/database';
 import { Contact } from '../contact';
 import { addressBook, OPEN_INVITATION_LIMIT } from './address-book';
 import { contactsMcpServer } from './mcp-server';
-import { contacts, feedback } from './schema';
+import { eq } from 'drizzle-orm';
+import { contacts, feedback, savedCards } from './schema';
 
 const cleanup: (() => Promise<void> | void)[] = [];
 afterEach(async () => {
@@ -31,6 +33,18 @@ async function setup() {
       db,
       ownerId,
       clientId: 'test-client',
+      // Serves a generated PNG for any URL, standing in for the SSRF-safe production fetcher.
+      fetchPhoto: async () =>
+        new Response(
+          new Uint8Array(
+            await sharp({
+              create: { width: 64, height: 64, channels: 3, background: '#3659d9' }
+            })
+              .png()
+              .toBuffer()
+          ),
+          { headers: { 'content-type': 'image/png' } }
+        ),
       invitationLink: (token, slug) => `https://example.test/p/${slug}/i/${token}`
     });
     await server.connect(serverTransport);
@@ -111,5 +125,94 @@ describe('contacts MCP server', () => {
     const { call } = await connect('owner');
     expect((await call('send_feedback', { message: '   ' })).isError).toBe(true);
     expect(await db.select().from(feedback)).toEqual([]);
+  });
+
+  describe('own card', () => {
+    const card = {
+      ...Contact.empty(),
+      firstName: 'Augie',
+      lastName: 'Doe',
+      email: 'augie@example.com',
+      photo: 'data:image/png;base64,AAAA'
+    };
+    const stored = async (db: Awaited<ReturnType<typeof setup>>['db'], userId: string) =>
+      (await db.query.savedCards.findFirst({ where: eq(savedCards.userId, userId) }))?.data;
+
+    test('reads the owner’s card without its photo', async () => {
+      const { db, connect } = await setup();
+      await db.insert(savedCards).values({ userId: 'owner', data: card });
+      const result = JSON.parse(
+        (await connect('owner').then(({ call }) => call('get_my_card'))).text
+      );
+      expect(result).toMatchObject({
+        firstName: 'Augie',
+        email: 'augie@example.com',
+        hasPhoto: true
+      });
+      expect(result).not.toHaveProperty('photo');
+    });
+
+    test('says so when the owner has no card yet', async () => {
+      const { connect } = await setup();
+      const { call } = await connect('owner');
+      expect(JSON.parse((await call('get_my_card')).text)).toBeNull();
+    });
+
+    test('updates only the given fields and keeps the photo', async () => {
+      const { db, connect } = await setup();
+      await db.insert(savedCards).values({ userId: 'owner', data: card });
+      const { call } = await connect('owner');
+      const result = await call('update_my_card', { company: 'Acme', phone: '+1 555 0100' });
+      expect(result.isError).toBe(false);
+      expect(await stored(db, 'owner')).toMatchObject({
+        firstName: 'Augie',
+        company: 'Acme',
+        phone: '+1 555 0100',
+        photo: card.photo
+      });
+    });
+
+    test('creates a card when the owner has none', async () => {
+      const { db, connect } = await setup();
+      const { call } = await connect('owner');
+      const result = await call('update_my_card', {
+        firstName: 'Augie',
+        lastName: 'Doe',
+        email: 'augie@example.com'
+      });
+      expect(result.isError).toBe(false);
+      expect(await stored(db, 'owner')).toMatchObject({ firstName: 'Augie', photo: '' });
+    });
+
+    test('rejects an invalid card and leaves the saved one unchanged', async () => {
+      const { db, connect } = await setup();
+      await db.insert(savedCards).values({ userId: 'owner', data: card });
+      const { call } = await connect('owner');
+      const result = await call('update_my_card', { email: 'not-an-email' });
+      expect(result.isError).toBe(true);
+      expect(result.text).toContain('valid email');
+      expect(await stored(db, 'owner')).toMatchObject({ email: 'augie@example.com' });
+    });
+
+    test('never touches another user’s card', async () => {
+      const { db, connect } = await setup();
+      await db.insert(savedCards).values({ userId: 'other', data: card });
+      const { call } = await connect('owner');
+      expect(JSON.parse((await call('get_my_card')).text)).toBeNull();
+      await call('update_my_card', { firstName: 'Mallory', lastName: 'X', email: 'm@example.com' });
+      expect(await stored(db, 'other')).toMatchObject({ firstName: 'Augie' });
+    });
+
+    test('sets the photo from a link and removes it with null', async () => {
+      const { db, connect } = await setup();
+      await db.insert(savedCards).values({ userId: 'owner', data: card });
+      const { call } = await connect('owner');
+      expect(
+        (await call('update_my_card', { photoUrl: 'https://images.example/me.png' })).isError
+      ).toBe(false);
+      expect((await stored(db, 'owner'))?.photo).toStartWith('data:image/jpeg;base64,');
+      expect((await call('update_my_card', { photoUrl: null })).isError).toBe(false);
+      expect(await stored(db, 'owner')).toMatchObject({ photo: '', firstName: 'Augie' });
+    });
   });
 });

@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer, requireScopes } from '@modelcontextprotocol/server';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { Contact, contactInput, type ContactInput } from '../contact';
 import { addressBook, OPEN_INVITATION_LIMIT } from './address-book';
 import type { AppDatabase } from './db';
 import { McpScope } from './mcp-scope';
-import { feedback } from './schema';
+import { photoFromUrl, type PhotoFetch } from './photo';
+import { feedback, savedCards } from './schema';
 
 type Book = ReturnType<typeof addressBook>;
 type ListedContact = Awaited<ReturnType<Book['contacts']>>[number];
@@ -17,6 +20,8 @@ export type ContactsMcpOptions = {
   clientId: string;
   /** Builds the shareable URL for an invitation token on the owner's page. */
   invitationLink: (token: string, slug: string) => string;
+  /** Downloads photos from links given to update_my_card. Must refuse non-public addresses. */
+  fetchPhoto: PhotoFetch;
 };
 
 const text = (value: unknown) => ({
@@ -39,6 +44,37 @@ const summary = ({ id, createdAt, data: { photo, ...details }, source }: ListedC
   source
 });
 
+// The owner's own card without its photo, which is a large data URL.
+const cardSummary = ({ photo, ...details }: ContactInput) => ({
+  ...details,
+  hasPhoto: Boolean(photo)
+});
+
+// Every editable text field of a card. contactInput validates the merged result.
+const cardFields = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  email: z.string().optional().describe('An email or phone is required'),
+  phone: z.string().optional(),
+  street: z.string().optional(),
+  street2: z.string().optional().describe('Apartment, suite, or unit'),
+  city: z.string().optional(),
+  region: z.string().optional().describe('State, province, or region'),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  birthday: z.string().optional().describe('YYYY-MM-DD'),
+  pronouns: z.string().optional(),
+  company: z.string().optional(),
+  website: z.string().optional().describe('An https:// or http:// link'),
+  notes: z.string().optional(),
+  photoUrl: z
+    .union([z.string(), z.null()])
+    .optional()
+    .describe(
+      'A public https:// link to a JPEG, PNG, or WebP image to use as the photo, or null to remove it'
+    )
+});
+
 const matches = (contact: ListedContact, search: string) =>
   [
     contact.data.firstName,
@@ -52,8 +88,18 @@ const matches = (contact: ListedContact, search: string) =>
     .includes(search.toLowerCase());
 
 /** An MCP server over one owner's address book. Build one per request. */
-export function contactsMcpServer({ db, ownerId, clientId, invitationLink }: ContactsMcpOptions) {
+export function contactsMcpServer({
+  db,
+  ownerId,
+  clientId,
+  invitationLink,
+  fetchPhoto
+}: ContactsMcpOptions) {
   const book = addressBook(db);
+  const savedCard = async () => {
+    const row = await db.query.savedCards.findFirst({ where: eq(savedCards.userId, ownerId) });
+    return row ? contactInput.parse(row.data) : null;
+  };
   const server = new McpServer(
     { name: 'contacts-exchange', version: '1.0.0' },
     {
@@ -167,6 +213,52 @@ export function contactsMcpServer({ db, ownerId, clientId, invitationLink }: Con
         .insert(feedback)
         .values({ id: randomUUID(), userId: ownerId, clientId, message, createdAt: Date.now() });
       return text({ status: 'received' });
+    }
+  );
+
+  server.registerTool(
+    'get_my_card',
+    {
+      title: 'Get my card',
+      description:
+        'Read your own contact card. It pre-fills invitations other people send you. Returns null if you have not made one.',
+      annotations: { readOnlyHint: true },
+      scopeChallenge: requireScopes(McpScope.readContacts)
+    },
+    async () => {
+      const card = await savedCard();
+      return text(card ? cardSummary(card) : null);
+    }
+  );
+
+  server.registerTool(
+    'update_my_card',
+    {
+      title: 'Update my card',
+      description:
+        'Change fields on your own contact card. Only the fields you pass change. Creating a card needs a first name, last name, and an email or phone.',
+      inputSchema: cardFields,
+      scopeChallenge: requireScopes(McpScope.writeCard)
+    },
+    async ({ photoUrl, ...fields }) => {
+      const current = (await savedCard()) ?? Contact.empty();
+      let photo = current.photo;
+      if (photoUrl === null) photo = '';
+      else if (photoUrl !== undefined) {
+        const downloaded = await photoFromUrl(photoUrl, fetchPhoto);
+        if (!downloaded.ok) return failure(`${downloaded.message} Your card was not changed.`);
+        photo = downloaded.photo;
+      }
+      const parsed = contactInput.safeParse({ ...current, ...fields, photo });
+      if (!parsed.success)
+        return failure(
+          `${parsed.error.issues[0]?.message ?? 'Check the card details.'} Your card was not changed.`
+        );
+      await db
+        .insert(savedCards)
+        .values({ userId: ownerId, data: parsed.data })
+        .onConflictDoUpdate({ target: savedCards.userId, set: { data: parsed.data } });
+      return text(cardSummary(parsed.data));
     }
   );
 

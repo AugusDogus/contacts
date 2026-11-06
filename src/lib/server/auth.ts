@@ -54,7 +54,8 @@ export const auth = betterAuth({
         'email',
         'offline_access',
         McpScope.readContacts,
-        McpScope.writeInvitations
+        McpScope.writeInvitations,
+        McpScope.writeCard
       ],
       accessTokenExpiresIn: accessTokenSeconds,
       refreshTokenExpiresIn: refreshTokenSeconds,
