@@ -1,6 +1,8 @@
 import * as stylex from '@stylexjs/stylex';
 import { tokens, media } from '#lib/tokens.stylex.ts';
 export const styles = stylex.create({
+  // The page title keeps its size when the demo renders it as a lower heading level.
+  heading: { fontSize: { default: 26, [media.mobile]: 23 }, letterSpacing: '-0.5px' },
   actions: { display: 'flex', gap: 8 },
   wideOnly: { display: { default: 'inline', [media.mobile]: 'none' } },
   quiet: {

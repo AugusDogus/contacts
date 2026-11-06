@@ -4,11 +4,15 @@
   import { styles } from './ContactDetail.stylex.ts';
   import { Download } from '@lucide/svelte';
   import { Contact } from '#lib/contact.ts';
-  import { deleteContact } from '#lib/contacts.remote.ts';
+  import type { AddressBookActions } from '#lib/address-book-actions.ts';
   import { notify, failure } from '#lib/notice.svelte.ts';
   import Modal from './Modal.svelte';
   import Avatar from './Avatar.svelte';
-  let { contact, onclose }: { contact: Contact; onclose: () => void } = $props();
+  let {
+    contact,
+    actions,
+    onclose
+  }: { contact: Contact; actions: AddressBookActions; onclose: () => void } = $props();
   let confirming = $state(false);
   let deleting = $state(false);
   let data = $derived(contact.data);
@@ -34,7 +38,7 @@
   async function remove() {
     deleting = true;
     try {
-      await deleteContact(contact.id);
+      await actions.deleteContact(contact.id);
       notify(`${Contact.name(data)} removed`);
       onclose();
     } catch (cause) {
@@ -101,8 +105,10 @@
     </div>{:else}<div {...stylex.attrs(styles.actions, styles.footer)}>
       <button {...stylex.attrs(ui.textButton, styles.remove)} onclick={() => (confirming = true)}
         >Remove</button
-      ><a {...stylex.attrs(ui.button, ui.small)} href="/export?id={contact.id}" download
-        ><Download size={14} />vCard</a
+      ><a
+        {...stylex.attrs(ui.button, ui.small)}
+        href={actions.vcardHref(contact)}
+        download="{Contact.name(data)}.vcf"><Download size={14} />vCard</a
       >
     </div>{/if}
 </Modal>
