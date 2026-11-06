@@ -37,6 +37,12 @@
       custom: config ? FormConfig.prefill(config, initial) : initial.custom
     }))
   );
+  // Answers follow the owner's custom fields, which the landing page's demo changes while open.
+  $effect(() => {
+    if (!config) return;
+    const owner = { ...config, custom: config.custom.map((field) => ({ ...field })) };
+    untrack(() => (value.custom = FormConfig.prefill(owner, value)));
+  });
   const req = (field: TextField) => Boolean(config && FormConfig.requires(config, field));
   const idFor = (field: string) => `contact-${field}`;
   const shows = (field: TextField) => !essentials || req(field);
