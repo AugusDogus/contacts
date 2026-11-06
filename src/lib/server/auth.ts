@@ -61,7 +61,11 @@ export const auth = betterAuth({
       // MCP clients often run several instances from one stored grant, each refreshing its own
       // copy. A sibling presenting a token rotated while that rotation's access token is still
       // live gets the same response instead of revoking every token for the client and user.
-      refreshTokenReuseInterval: accessTokenSeconds
+      refreshTokenReuseInterval: accessTokenSeconds,
+      // An idle instance can hold a copy rotated hours ago and present it when it reconnects.
+      // Refuse that copy alone for a day after its rotation (patched in, as Executor does).
+      // Later reuse, or reuse of a revoked token, still revokes the family.
+      refreshTokenSupersededInterval: 24 * 3600
     }),
     cimd({ fetchClientMetadataResource, metadataProfile: 'mcp-2026-07-28' }),
     sveltekitCookies(getRequestEvent)

@@ -1,0 +1,36 @@
+diff --git a/dist/authorize-BzDrbYtI.mjs b/dist/authorize-BzDrbYtI.mjs
+index 63675734e2592a5251f3cc5dcb28e00b09db41d1..c8f7aaee6137f8cd376b4c1850f6adf47f022a6b 100644
+--- a/dist/authorize-BzDrbYtI.mjs
++++ b/dist/authorize-BzDrbYtI.mjs
+@@ -2345,6 +2345,10 @@ async function handleRefreshTokenGrant(ctx, opts) {
+ 				error: "invalid_grant"
+ 			});
+ 		}
++		if (refreshToken.rotatedAt && new Date(refreshToken.rotatedAt).getTime() + (opts.refreshTokenSupersededInterval ?? 0) * 1e3 >= Date.now()) throw new APIError("BAD_REQUEST", {
++			error_description: "invalid refresh token",
++			error: "invalid_grant"
++		});
+ 		await invalidateRefreshFamily(ctx, client_id, refreshToken.userId);
+ 		throw new APIError("BAD_REQUEST", {
+ 			error_description: "invalid refresh token",
+diff --git a/dist/oauth-Dlknz2KA.d.mts b/dist/oauth-Dlknz2KA.d.mts
+index 814e1bf41892d882208645b729f8137c151d51ed..d12e518a6de7455ab483ca589cf3b1120e7abe42 100644
+--- a/dist/oauth-Dlknz2KA.d.mts
++++ b/dist/oauth-Dlknz2KA.d.mts
+@@ -1288,6 +1288,16 @@ interface OAuthOptions<Scopes extends readonly Scope[] = InternallySupportedScop
+    * @default 0
+    */
+   refreshTokenReuseInterval?: number;
++  /**
++   * Seconds after rotation that presenting the rotated refresh token is refused
++   * without revoking the family. Clients that keep stale copies, such as an
++   * idle instance sharing a grant, would otherwise revoke every sibling. Later
++   * reuse, and reuse of a token revoked other than by rotation, still revokes
++   * the family.
++   *
++   * @default 0
++   */
++  refreshTokenSupersededInterval?: number;
+   /**
+    * The amount of time in seconds that the authorization code is valid for.
+    *
