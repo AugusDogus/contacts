@@ -48,6 +48,24 @@
     }
   }
 
+  const steps = [
+    {
+      title: 'Name a link',
+      text: 'Make one for each person. It works once and expires after 30 days.'
+    },
+    {
+      title: 'They fill in their card',
+      text: 'No account or app. They add their photo, email, phone and more.'
+    },
+    {
+      title: 'It lands in People',
+      text: 'Search everyone who replied, and see who you’re still waiting on.'
+    },
+    {
+      title: 'Add them to your phone',
+      text: 'Download a vCard, or add to Google Contacts without making duplicates.'
+    }
+  ];
   const fields = [
     { name: 'Name', state: 'Required', on: true },
     { name: 'Email or phone', state: 'One required', on: true },
@@ -90,7 +108,7 @@
         ><img src="/favicon.svg" alt="" width="28" height="28" />Contacts Exchange</a
       >
       <ul {...stylex.attrs(s.navLinks)}>
-        <li><a {...stylex.attrs(s.navLink)} href="#try">Try it</a></li>
+        <li><a {...stylex.attrs(s.navLink)} href="#how">How it works</a></li>
         <li><a {...stylex.attrs(s.navLink)} href="#questions">Questions</a></li>
       </ul>
       {#if !data.signedIn}<a {...stylex.attrs(s.navLink, s.navSignIn)} href="/login?signin"
@@ -116,17 +134,21 @@
       </div>
     </section>
 
-    <section id="try" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="try-title">
+    <section id="how" {...stylex.attrs(s.section, s.sectionAfterHero)} aria-labelledby="how-title">
       <div {...stylex.attrs(s.container, s.tryIt)}>
         <div {...stylex.attrs(s.tryHead)}>
-          <h2 id="try-title" {...stylex.attrs(s.h2)}>Try it here</h2>
-          <p {...stylex.attrs(s.body)}>
-            This is the real app with pretend people. Nothing you type leaves this page.
-          </p>
-          <ol {...stylex.attrs(s.trySteps)}>
-            <li>Press Invite and name a link.</li>
-            <li>Fill in your friend’s side.</li>
-            <li>Open their card in People.</li>
+          <div {...stylex.attrs(s.pane)}>
+            <h2 id="how-title" {...stylex.attrs(s.h2)}>From one link to your phone</h2>
+            <p {...stylex.attrs(s.body)}>
+              No more copying addresses out of texts. Each person fills in their own card.
+            </p>
+            <a {...stylex.attrs(s.button)} href={start.href}>{start.label}</a>
+          </div>
+          <ol {...stylex.attrs(s.steps)}>
+            {#each steps as step (step.title)}<li {...stylex.attrs(s.caption)}>
+                <h3 {...stylex.attrs(s.h3)}>{step.title}</h3>
+                <p {...stylex.attrs(s.body)}>{step.text}</p>
+              </li>{/each}
           </ol>
         </div>
         <LiveDemo origin={data.appUrl} />

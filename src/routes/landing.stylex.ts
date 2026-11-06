@@ -230,18 +230,27 @@ export const s = stylex.create({
     display: 'grid',
     gridTemplateColumns: { default: 'minmax(0, 5fr) minmax(0, 7fr)', [at.stack]: 'minmax(0, 1fr)' },
     columnGap: 'clamp(32px, 6vw, 96px)',
-    rowGap: 16,
-    alignItems: 'end'
+    rowGap: 48,
+    alignItems: 'start'
   },
-  trySteps: {
-    gridColumn: { default: '2', [at.stack]: 'auto' },
-    gridRow: { default: '1 / span 2', [at.stack]: 'auto' },
+  pane: { display: 'grid', gap: 24, justifyItems: 'start' },
+  steps: {
     display: 'grid',
-    gap: 4,
+    gridTemplateColumns: { default: 'repeat(2, minmax(0, 1fr))', [at.phone]: 'minmax(0, 1fr)' },
+    columnGap: 32,
+    rowGap: 32,
     margin: 0,
-    paddingInlineStart: 20,
-    color: ink.ink2,
-    fontSize: 16
+    padding: 0,
+    listStyle: 'none'
+  },
+  caption: {
+    display: 'grid',
+    alignContent: 'start',
+    gap: 4,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopStyle: 'solid',
+    borderTopColor: ink.ink
   },
 
   // Fields: a ruled list of what friends fill in.
