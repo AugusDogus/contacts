@@ -52,9 +52,7 @@ export const DemoBook = {
     contacts: [
       ['Alex', 'Morgan', 'Brooklyn', 'NY', 1, 41],
       ['Jamie', 'Chen', 'San Francisco', 'CA', 2, 23],
-      ['Jordan', 'Davis', 'Austin', 'TX', 3, 12],
-      ['Nina', 'Patel', 'Seattle', 'WA', 6, 2],
-      ['Sam', 'Rivera', 'Los Angeles', 'CA', 7, 64]
+      ['Nina', 'Patel', 'Seattle', 'WA', 6, 2]
     ].map(([first, last, city, region, photo, daysAgo]) => ({
       id: `demo-contact-${photo}`,
       ownerId: SLUG,

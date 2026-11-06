@@ -2,6 +2,7 @@ import { Contact, type ContactInput } from '#lib/contact.ts';
 import { DemoBook } from '#lib/demo-book.ts';
 import { invitationUrl } from '#lib/links.ts';
 import type { AddressBookActions } from '#lib/address-book-actions.ts';
+import type { RequirableField } from '#lib/form-config.ts';
 import mayaPhoto from '../../static/demo/5.jpg?inline';
 
 /** The friend's side: their form for the open link, or what they see once it's sent. */
@@ -16,6 +17,9 @@ const maya: ContactInput = {
   phone: '(202) 555-0147',
   photo: mayaPhoto
 };
+
+/** The question an owner adds of their own in the demo. */
+const question = { id: 'met', label: 'How did we meet?', required: true };
 
 /** One demo address book shared by every step of How it works. */
 export class LiveDemo {
@@ -34,6 +38,28 @@ export class LiveDemo {
         this.open();
       }
     });
+  }
+
+  /** Whether a field, or the sample question of your own, is required. */
+  requires(field: RequirableField | 'question') {
+    const { form } = this.book.profile;
+    return field === 'question'
+      ? form.custom.some(({ id }) => id === question.id)
+      : form.required.includes(field);
+  }
+
+  /** Marks a field required or optional; links already sent pick it up, as in the app. */
+  require(field: RequirableField | 'question', on: boolean) {
+    const { form } = this.book.profile;
+    if (field !== 'question')
+      form.required = on
+        ? [...form.required, field]
+        : form.required.filter((required) => required !== field);
+    else {
+      form.custom = on ? [question] : [];
+      // The form sets up answers for custom fields when it opens, so open it again.
+      if (this.friend.kind === 'form') this.friend = { ...this.friend, key: this.friend.key + 1 };
+    }
   }
 
   /** Shows a blank form for the current link. */
