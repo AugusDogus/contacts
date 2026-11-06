@@ -32,6 +32,17 @@ export type IntegrationsDocument = {
   }[];
 };
 
+/**
+ * The MCP server's identity: its server card and the `serverInfo` it reports once connected
+ * share these, because SEP-2127 says the two should not contradict each other. The name is
+ * reverse-DNS for contacts.exchange and stays the same in dev and preview builds.
+ */
+export const McpServerInfo = {
+  name: 'exchange.contacts/address-book',
+  version: '1.0.0',
+  title: 'Contacts Exchange'
+} as const;
+
 const credentialId = 'contacts_exchange_account';
 const mcpUrl = (origin: string) => `${origin}/mcp`;
 
@@ -67,16 +78,41 @@ export const Discovery = {
     };
   },
 
-  /** MCP server card (SEP-1649). */
+  /**
+   * MCP Server Card in the official SEP-2127 format, served at `/mcp/server-card`. It also
+   * keeps the older SEP-1649 fields (`url`, `transport`, `authentication`) that integrations.sh
+   * reads at `/.well-known/mcp/server-card.json`; the official schema allows extra fields.
+   */
   serverCard(origin: string) {
     return {
-      url: mcpUrl(origin),
-      name: 'Contacts Exchange',
+      $schema: 'https://static.modelcontextprotocol.io/schemas/v1/server-card.schema.json',
+      ...McpServerInfo,
+      // The official schema allows at most 100 characters.
       description:
-        'Read the address book your friends filled in, create invitation links, and edit your own contact card.',
+        'Read your address book, create invitation links, and edit your own contact card.',
+      websiteUrl: origin,
+      icons: [{ src: `${origin}/favicon.svg`, mimeType: 'image/svg+xml', sizes: ['any'] }],
+      remotes: [{ type: 'streamable-http', url: mcpUrl(origin) }],
+      url: mcpUrl(origin),
       transport: 'streamable-http',
       authentication: { type: 'oauth2', authorization_server: `${origin}/api/auth` }
     } as const;
+  },
+
+  /** AI Catalog listing the server card, for domain-level discovery (SEP-2127). */
+  aiCatalog(origin: string) {
+    const [namespace, name] = McpServerInfo.name.split('/');
+    return {
+      specVersion: '1.0',
+      entries: [
+        {
+          // urn:air:{publisher}:{namespace}:{name}, with the publisher read back from reverse DNS.
+          identifier: `urn:air:${namespace?.split('.').reverse().join('.')}:mcp:${name}`,
+          type: 'application/mcp-server-card+json',
+          url: `${mcpUrl(origin)}/server-card`
+        }
+      ]
+    };
   },
 
   /** llms.txt (llmstxt.org): plain-language context for agents. */
@@ -87,10 +123,17 @@ export const Discovery = {
 
 Contacts Exchange has a remote MCP server, so AI apps can read your address book, create invitation links for you, and edit your own contact card.
 
+## When to use Contacts Exchange
+
+- Look up contact details friends shared with the user: name, email, phone, address, birthday, and answers to the user's custom questions.
+- Ask someone for their contact details by creating a single-use invitation link to send them.
+- Update the user's own contact card, which pre-fills invitations other people send them.
+
 ## MCP server
 
 - Endpoint: ${mcpUrl(origin)} (Streamable HTTP)
 - Authorization: OAuth 2.1. Apps register with a Client ID Metadata Document, then you sign in to Contacts Exchange and approve access. Metadata: ${origin}/.well-known/oauth-protected-resource/mcp
+- Server card: ${mcpUrl(origin)}/server-card
 - Scopes: contacts:read (every tool), invitations:write (creating invitation links), card:write (editing your own card), offline_access (staying connected)
 
 ## Pages

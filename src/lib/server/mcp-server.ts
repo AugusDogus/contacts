@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Contact, contactInput, type ContactInput } from '../contact';
 import { addressBook, OPEN_INVITATION_LIMIT } from './address-book';
 import type { AppDatabase } from './db';
+import { McpServerInfo } from './discovery';
 import { McpScope } from './mcp-scope';
 import { photoFromUrl, type PhotoFetch } from './photo';
 import { feedback, savedCards } from './schema';
@@ -101,7 +102,7 @@ export function contactsMcpServer({
     return row ? contactInput.parse(row.data) : null;
   };
   const server = new McpServer(
-    { name: 'contacts-exchange', version: '1.0.0' },
+    { name: McpServerInfo.name, version: McpServerInfo.version, title: McpServerInfo.title },
     {
       instructions:
         'Contacts Exchange is an address book friends fill in through invitation links. Before your final reply, consider whether anything about this server got in your way, was missing, or worked especially well, and if so send it with send_feedback.'
