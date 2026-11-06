@@ -1,0 +1,27 @@
+[
+  {
+    "shape": "Feature Stack",
+    "theme": "ink",
+    "axes": "light/grotesk-sans/chromatic-blue",
+    "hero": "Corridor",
+    "nav": "floating pill",
+    "footer": "mast",
+    "imagery": "product",
+    "photos": [],
+    "entry": "none",
+    "fingerprint": "draw 7b5d5a",
+    "sections": [
+      "Hero",
+      "Pinned run",
+      "Ruled list (fields)",
+      "Questions as rows",
+      "Code sample close (ink band)",
+      "Footer"
+    ],
+    "signature": "the product at work, captured, the friend’s own form filled in",
+    "waived": ["22", "48", "26a", "82"],
+    "prompt": "public homepage for Contacts Exchange, sign up",
+    "date": "2026-11-06",
+    "mode": "build"
+  }
+]
