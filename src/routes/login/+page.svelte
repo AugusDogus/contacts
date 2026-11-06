@@ -18,7 +18,7 @@
   async function authenticate(google = false) {
     error = '';
     busy = true;
-    const callbackURL = data.claim ? '/settings?claim=1' : '/';
+    const callbackURL = data.claim ? '/settings?claim=1' : '/people';
     try {
       const result = google
         ? await authClient.signIn.social({ provider: 'google', callbackURL })

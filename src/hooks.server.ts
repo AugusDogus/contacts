@@ -19,6 +19,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     event.url.hostname.endsWith(`.${PUBLIC_CONTACTS_DOMAIN}`) &&
     [
       '/login',
+      '/people',
       '/consent',
       '/api/auth',
       '/invitations',
@@ -41,7 +42,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Demo identities exist only in the Vite dev server and are isolated by an unguessable cookie.
   if (dev && !session) {
     let demoId = event.cookies.get('gather-demo');
-    if (event.url.pathname === '/' && (!demoId || !(await book.profile(demoId)))) {
+    if (event.url.pathname === '/people' && (!demoId || !(await book.profile(demoId)))) {
       demoId = await createDemo();
       event.cookies.set('gather-demo', demoId, {
         path: '/',
