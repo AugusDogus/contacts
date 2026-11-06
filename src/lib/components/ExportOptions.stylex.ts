@@ -24,7 +24,13 @@ export const styles = stylex.create({
     color: tokens.muted,
     flexShrink: 0
   },
-  text: { flexGrow: 1, flexBasis: 0, minWidth: 0, lineHeight: 1.35 },
+  // On phones the text takes the row, so the button wraps beneath it (see actions' indent).
+  text: {
+    flexGrow: 1,
+    flexBasis: { default: 0, [media.mobile]: 'calc(100% - 50px)' },
+    minWidth: 0,
+    lineHeight: 1.35
+  },
   title: {
     display: 'flex',
     alignItems: 'center',
